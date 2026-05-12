@@ -8,7 +8,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
@@ -26,7 +26,7 @@ services:
       - ./backend:/app
       - media_data:/app/media
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -35,8 +35,13 @@ services:
       - DJANGO_SECRET_KEY=dev-secret-key-change-in-production
       - DJANGO_DEBUG=True
       - ALLOWED_HOSTS=*
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000
-      - FRONTEND_URL=http://localhost:3000
+      - CORS_ALLOWED_ORIGINS=http://localhost:3001
+      - FRONTEND_URL=http://localhost:3001
+      # Stripe — lasciate vuote in dev per usare la modalità mock (checkout istantaneo senza pagamento reale).
+      # In produzione: STRIPE_SECRET_KEY=sk_live_… STRIPE_PUBLISHABLE_KEY=pk_live_… STRIPE_WEBHOOK_SECRET=whsec_…
+      - STRIPE_SECRET_KEY=
+      - STRIPE_PUBLISHABLE_KEY=
+      - STRIPE_WEBHOOK_SECRET=
 
   frontend:
     build: ./frontend
@@ -46,12 +51,12 @@ services:
       - /app/node_modules
       - /app/.next
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - backend
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
-      - NEXT_PUBLIC_MEDIA_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8001/api
+      - NEXT_PUBLIC_MEDIA_URL=http://localhost:8001
 
 volumes:
   postgres_data:

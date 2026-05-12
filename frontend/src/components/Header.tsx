@@ -41,14 +41,12 @@ export default function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
-              {user.user_type === 'professionista' ? (
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    <User className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </Button>
-                </Link>
-              ) : null}
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm">
+                  <User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Button>
+              </Link>
               <Button variant="ghost" size="sm" onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Esci
@@ -59,9 +57,9 @@ export default function Header() {
               <Link href="/login">
                 <Button variant="ghost" size="sm">Accedi</Button>
               </Link>
-              <Link href="/registrazione">
+              <Link href="/registrati">
                 <Button size="sm" className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
-                  Iscriviti come professionista
+                  Registrati
                 </Button>
               </Link>
             </>
@@ -90,11 +88,9 @@ export default function Header() {
               <hr className="border-[#1A1A1A]/10" />
               {user ? (
                 <>
-                  {user.user_type === 'professionista' && (
-                    <Link href="/dashboard" onClick={() => setOpen(false)}>
-                      Dashboard
-                    </Link>
-                  )}
+                  <Link href="/dashboard" onClick={() => setOpen(false)}>
+                    Dashboard
+                  </Link>
                   <button onClick={() => { logout(); setOpen(false); }} className="text-left text-[#1A1A1A]/70">
                     Esci
                   </button>
@@ -102,9 +98,9 @@ export default function Header() {
               ) : (
                 <>
                   <Link href="/login" onClick={() => setOpen(false)}>Accedi</Link>
-                  <Link href="/registrazione" onClick={() => setOpen(false)}>
+                  <Link href="/registrati" onClick={() => setOpen(false)}>
                     <Button className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
-                      Iscriviti come professionista
+                      Registrati
                     </Button>
                   </Link>
                 </>

@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, userType: string) => Promise<void>;
+  register: (email: string, password: string, userType: string, firstName?: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -46,8 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUser();
   };
 
-  const register = async (email: string, password: string, userType: string) => {
-    await authApi.register({ email, password, password_confirm: password, user_type: userType });
+  const register = async (email: string, password: string, userType: string, firstName?: string) => {
+    await authApi.register({
+      email,
+      password,
+      password_confirm: password,
+      user_type: userType,
+      first_name: firstName,
+    });
     await fetchUser();
   };
 

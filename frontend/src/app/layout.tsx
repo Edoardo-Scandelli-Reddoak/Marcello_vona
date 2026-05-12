@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
@@ -10,6 +10,13 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Directory Professioniste — Massaggi, Yoga, Relax',
   description: 'Trova le migliori professioniste di Massaggi, Yoga e Relax vicino a te.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#F8F7F5',
 };
 
 export default function RootLayout({

@@ -1,10 +1,29 @@
 import os
 import shutil
+from datetime import date
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.utils import timezone
 from apps.accounts.models import User
 from apps.professioniste.models import Professionista, Categoria, Tag
 from apps.reviews.models import Recensione, RecensioneSito
+from apps.abbonamenti.models import PianoAbbonamento, Abbonamento
+
+
+# 10 tag standard, definiti centralmente. La professionista in fase di registrazione
+# sceglie da questa lista (vedi GET /api/tags/).
+TAG_STANDARD = [
+    'Aromaterapia',
+    'Disponibile weekend',
+    'Domicilio',
+    'Lezioni di gruppo',
+    'Lezioni online',
+    'Massaggio decontratturante',
+    'Massaggio sportivo',
+    'Meditazione guidata',
+    'Studio privato',
+    'Yoga principianti',
+]
 
 
 PROFESSIONISTE = [
@@ -21,8 +40,14 @@ PROFESSIONISTE = [
         'nazione': 'Italia',
         'lat': 45.4642,
         'lng': 9.1900,
-        'tags': ['domicilio', 'decontratturante', 'sportivo'],
+        'tags': ['Domicilio', 'Studio privato', 'Massaggio decontratturante', 'Massaggio sportivo', 'Disponibile weekend'],
         'foto': 'chiara.jpg',
+        'stato': 'Sempre disponibile',
+        'onlyfans': 'https://onlyfans.com/chiarabianchi',
+        'instagram': 'https://instagram.com/chiara.bianchi.massaggi',
+        'facebook': 'https://facebook.com/chiara.bianchi.massaggi',
+        'tiktok': 'https://tiktok.com/@chiara.bianchi.massaggi',
+        'telegram': 'https://t.me/chiara_bianchi_massaggi',
     },
     {
         'email': 'giulia@demo.com',
@@ -37,8 +62,10 @@ PROFESSIONISTE = [
         'nazione': 'Italia',
         'lat': 41.9028,
         'lng': 12.4964,
-        'tags': ['hatha yoga', 'vinyasa', 'principianti', 'lezioni gruppo'],
+        'tags': ['Studio privato', 'Lezioni di gruppo', 'Lezioni online', 'Yoga principianti', 'Disponibile weekend'],
         'foto': 'giulia.jpg',
+        'stato': 'Contattami subito',
+        'instagram': 'https://instagram.com/giulia.yoga.roma',
     },
     {
         'email': 'sofia@demo.com',
@@ -53,8 +80,9 @@ PROFESSIONISTE = [
         'nazione': 'Italia',
         'lat': 43.7696,
         'lng': 11.2558,
-        'tags': ['aromaterapia', 'rilassamento', 'oli essenziali'],
+        'tags': ['Studio privato', 'Aromaterapia', 'Meditazione guidata', 'Disponibile weekend'],
         'foto': 'sofia.jpg',
+        'stato': 'Online ora',
     },
     {
         'email': 'elena@demo.com',
@@ -69,8 +97,9 @@ PROFESSIONISTE = [
         'nazione': 'Italia',
         'lat': 45.0703,
         'lng': 7.6869,
-        'tags': ['thai', 'riflessologia', 'olistico', 'disponibile weekend'],
+        'tags': ['Studio privato', 'Massaggio decontratturante', 'Domicilio', 'Disponibile weekend'],
         'foto': 'elena.jpg',
+        'stato': 'Disponibile oggi',
     },
     {
         'email': 'martina@demo.com',
@@ -85,8 +114,9 @@ PROFESSIONISTE = [
         'nazione': 'Italia',
         'lat': 44.4949,
         'lng': 11.3426,
-        'tags': ['kundalini', 'meditazione', 'ritiri', 'workshop'],
+        'tags': ['Lezioni di gruppo', 'Yoga principianti', 'Meditazione guidata', 'Lezioni online', 'Studio privato'],
         'foto': 'martina.jpg',
+        'stato': 'Prenotazioni aperte',
     },
 ]
 
@@ -123,13 +153,18 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source_dir = settings.MEDIA_ROOT / 'professioniste' / 'profilo'
 
-        # Create tags
+        # Ensure the 10 standard tags exist (idempotent), and remove any stale tag
+        # that isn't in the standard list (so the catalog stays clean).
         tag_objects = {}
-        for p in PROFESSIONISTE:
-            for t in p['tags']:
-                if t not in tag_objects:
-                    obj, _ = Tag.objects.get_or_create(nome=t)
-                    tag_objects[t] = obj
+        for nome in TAG_STANDARD:
+            obj, _ = Tag.objects.get_or_create(nome=nome)
+            tag_objects[nome] = obj
+        stale = Tag.objects.exclude(nome__in=TAG_STANDARD)
+        if stale.exists():
+            self.stdout.write(self.style.WARNING(
+                f'Rimozione di {stale.count()} tag non più nello standard: {[t.nome for t in stale]}'
+            ))
+            stale.delete()
 
         # Create professioniste
         for p_data in PROFESSIONISTE:
@@ -167,16 +202,75 @@ class Command(BaseCommand):
                     'foto_profilo': foto_path,
                     'documento_fronte': foto_path,
                     'documento_retro': foto_path,
+                    'data_nascita': date(1990, 1, 1),
                     'stato_approvazione': 'approvata',
+                    'data_verifica': timezone.now(),
                     'privacy_accettata': True,
                     'termini_accettati': True,
+                    'onlyfans_url': p_data.get('onlyfans', ''),
+                    'instagram_url': p_data.get('instagram', ''),
+                    'facebook_url': p_data.get('facebook', ''),
+                    'tiktok_url': p_data.get('tiktok', ''),
+                    'telegram_url': p_data.get('telegram', ''),
+                    'stato': p_data.get('stato', ''),
+                    'indirizzo_pubblico_aggiornato_at': timezone.now(),
                 }
             )
+            # Sync social fields and private address on existing demo profiles too
+            of = p_data.get('onlyfans', '')
+            ig = p_data.get('instagram', '')
+            fb = p_data.get('facebook', '')
+            tk = p_data.get('tiktok', '')
+            tg = p_data.get('telegram', '')
+            stato = p_data.get('stato', '')
+            changed = False
+            if (prof.onlyfans_url != of or prof.instagram_url != ig or prof.facebook_url != fb
+                    or prof.tiktok_url != tk or prof.telegram_url != tg
+                    or prof.stato != stato):
+                prof.onlyfans_url = of
+                prof.instagram_url = ig
+                prof.facebook_url = fb
+                prof.tiktok_url = tk
+                prof.telegram_url = tg
+                prof.stato = stato
+                changed = True
+            if not prof.indirizzo_pubblico_aggiornato_at:
+                prof.indirizzo_pubblico_aggiornato_at = timezone.now()
+                changed = True
+            if changed:
+                prof.save()
+            # Always re-sync tags so the demo profiles stay aligned with TAG_STANDARD
+            # even when re-running the seed.
+            prof.tags.set([tag_objects[t] for t in p_data['tags']])
             if created:
-                prof.tags.set([tag_objects[t] for t in p_data['tags']])
                 self.stdout.write(self.style.SUCCESS(f'Creata: {prof.nome}'))
             else:
-                self.stdout.write(f'Già esistente: {prof.nome}')
+                self.stdout.write(f'Già esistente (tag sincronizzati): {prof.nome}')
+
+        # Active subscriptions for demo profiles: all five get an "evidenza" plan
+        # so they all appear in "Le più apprezzate".
+        piano_evidenza = PianoAbbonamento.objects.filter(tipo='evidenza', durata_giorni=30).first()
+        for p_data in PROFESSIONISTE:
+            prof = Professionista.objects.get(user__email=p_data['email'])
+            if not piano_evidenza:
+                continue
+            existing = Abbonamento.objects.filter(
+                professionista=prof,
+                piano__tipo='evidenza',
+                stato='attivo',
+                scadenza__gt=timezone.now(),
+            ).first()
+            if existing:
+                continue
+            abb = Abbonamento(
+                professionista=prof,
+                piano=piano_evidenza,
+                importo_centesimi=piano_evidenza.prezzo_centesimi,
+            )
+            abb.activate(payment_method='mock')
+            self.stdout.write(self.style.SUCCESS(
+                f'Abbonamento Evidenza creato per {prof.nome}'
+            ))
 
         # Create reviewer users and reviews
         reviewer_users = {}

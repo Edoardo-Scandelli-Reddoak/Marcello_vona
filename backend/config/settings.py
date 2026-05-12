@@ -28,6 +28,11 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.professioniste',
     'apps.reviews',
+    'apps.banners',
+    'apps.abbonamenti',
+    'apps.preferiti',
+    'apps.sblocchi',
+    'apps.notifiche',
 ]
 
 MIDDLEWARE = [
@@ -98,7 +103,7 @@ CORS_ALLOW_CREDENTIALS = True
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'apps.accounts.authentication.CookieJWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -119,6 +124,18 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SECURE': not DEBUG,
     'AUTH_COOKIE_SAMESITE': 'Lax',
 }
+
+# Stripe (lasciate vuote in dev → checkout va in modalità mock)
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001')
+
+# Email — in dev usa la console (le email vengono stampate nei log Django).
+# In produzione settare EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+# + EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_PORT, EMAIL_USE_TLS.
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@directoryprofessioniste.it')
 
 # Unfold Admin
 UNFOLD = {

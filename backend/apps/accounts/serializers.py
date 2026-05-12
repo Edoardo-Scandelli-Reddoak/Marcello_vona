@@ -8,10 +8,11 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'password_confirm', 'user_type')
+        fields = ('email', 'password', 'password_confirm', 'user_type', 'first_name')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -20,11 +21,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
+        first_name = validated_data.pop('first_name', '') or ''
         user = User.objects.create_user(
             username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
             user_type=validated_data.get('user_type', 'user'),
+            first_name=first_name.strip(),
         )
         return user
 

@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { professionisteApi } from '@/lib/api';
+import { professionisteApi, tagsApi } from '@/lib/api';
+
+interface Tag {
+  id: number;
+  nome: string;
+}
 
 const steps = [
   'Crea account',
@@ -32,14 +37,23 @@ export default function RegistrazionePage() {
   // Step 2
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [bio, setBio] = useState('');
+  const [stato, setStato] = useState('');
   const [telefono, setTelefono] = useState('');
+  // Indirizzo pubblico (mostrato sul sito, modificabile in seguito)
   const [via, setVia] = useState('');
   const [cap, setCap] = useState('');
   const [citta, setCitta] = useState('');
   const [provincia, setProvincia] = useState('');
   const [nazione, setNazione] = useState('Italia');
+  // Social (opzionali)
+  const [onlyfansUrl, setOnlyfansUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [telegramUrl, setTelegramUrl] = useState('');
 
   // Step 3
   const [fotoProfilo, setFotoProfilo] = useState<File | null>(null);
@@ -48,10 +62,41 @@ export default function RegistrazionePage() {
   const galleriaInputRef = useRef<HTMLInputElement>(null);
 
   // Step 4
+  const [dataNascita, setDataNascita] = useState('');
   const [docFronte, setDocFronte] = useState<File | null>(null);
   const [docRetro, setDocRetro] = useState<File | null>(null);
   const [privacy, setPrivacy] = useState(false);
   const [termini, setTermini] = useState(false);
+
+  useEffect(() => {
+    tagsApi.list().then(setAvailableTags).catch(() => setAvailableTags([]));
+  }, []);
+
+  const toggleTag = (id: number) => {
+    setSelectedTagIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const today = new Date();
+  const maxBirthDate = today.toISOString().split('T')[0];
+  const minBirthDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())
+    .toISOString()
+    .split('T')[0];
+
+  const calcolaEta = (iso: string): number | null => {
+    if (!iso) return null;
+    const dob = new Date(iso);
+    if (Number.isNaN(dob.getTime())) return null;
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age -= 1;
+    return age;
+  };
+  const etaCorrente = calcolaEta(dataNascita);
 
   const handleStep1 = async () => {
     setError('');
@@ -71,8 +116,17 @@ export default function RegistrazionePage() {
   };
 
   const handleStep2 = () => {
-    if (!nome || !categoria || !telefono || !via || !cap || !citta || !provincia) {
+    if (!nome || !categoria || !telefono) {
       setError('Compila tutti i campi obbligatori.');
+      return;
+    }
+    if (!via || !cap || !citta || !provincia) {
+      setError('Compila tutti i campi dell\'indirizzo.');
+      return;
+    }
+    const invalidUrl = (v: string) => v.trim() && !/^https?:\/\//i.test(v.trim());
+    if (invalidUrl(onlyfansUrl) || invalidUrl(instagramUrl) || invalidUrl(facebookUrl) || invalidUrl(tiktokUrl) || invalidUrl(telegramUrl)) {
+      setError('I link social devono iniziare con http:// o https://.');
       return;
     }
     setError('');
@@ -89,6 +143,18 @@ export default function RegistrazionePage() {
   };
 
   const handleStep4 = async () => {
+    if (!dataNascita) {
+      setError('Inserisci la tua data di nascita.');
+      return;
+    }
+    if (etaCorrente === null) {
+      setError('Data di nascita non valida.');
+      return;
+    }
+    if (etaCorrente < 18) {
+      setError('Devi essere maggiorenne (18+) per registrarti come professionista.');
+      return;
+    }
     if (!docFronte || !docRetro) {
       setError('Carica entrambi i lati del documento.');
       return;
@@ -104,17 +170,27 @@ export default function RegistrazionePage() {
       formData.append('nome', nome);
       formData.append('categoria', categoria);
       formData.append('bio', bio);
+      if (stato.trim()) formData.append('stato', stato.trim());
       formData.append('telefono', telefono);
+      // Indirizzo pubblico
       formData.append('via', via);
       formData.append('cap', cap);
       formData.append('citta', citta);
       formData.append('provincia', provincia);
       formData.append('nazione', nazione);
+      // Social (opzionali)
+      if (onlyfansUrl.trim()) formData.append('onlyfans_url', onlyfansUrl.trim());
+      if (instagramUrl.trim()) formData.append('instagram_url', instagramUrl.trim());
+      if (facebookUrl.trim()) formData.append('facebook_url', facebookUrl.trim());
+      if (tiktokUrl.trim()) formData.append('tiktok_url', tiktokUrl.trim());
+      if (telegramUrl.trim()) formData.append('telegram_url', telegramUrl.trim());
       formData.append('foto_profilo', fotoProfilo!);
       formData.append('documento_fronte', docFronte);
       formData.append('documento_retro', docRetro);
+      formData.append('data_nascita', dataNascita);
       formData.append('privacy_accettata', 'true');
       formData.append('termini_accettati', 'true');
+      selectedTagIds.forEach((id) => formData.append('tags', String(id)));
       galleria.forEach((f) => formData.append('galleria', f));
 
       await professionisteApi.register(formData);
@@ -127,8 +203,8 @@ export default function RegistrazionePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="mb-2 text-3xl font-bold text-[#1A1A1A]">Iscriviti come professionista</h1>
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
+      <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A] sm:text-3xl">Iscriviti come professionista</h1>
 
       {/* Progress */}
       <div className="mb-8 flex gap-1">
@@ -139,7 +215,7 @@ export default function RegistrazionePage() {
                 i <= step ? 'bg-[#E91E8C]' : 'bg-[#1A1A1A]/10'
               }`}
             />
-            <span className={`mt-1 block text-xs ${i === step ? 'font-medium text-[#E91E8C]' : 'text-[#1A1A1A]/40'}`}>
+            <span className={`mt-1 hidden text-xs sm:block ${i === step ? 'font-medium text-[#E91E8C]' : 'text-[#1A1A1A]/40'}`}>
               {s}
             </span>
           </div>
@@ -191,41 +267,140 @@ export default function RegistrazionePage() {
             </select>
           </div>
           <div>
-            <Label>Tag (separati da virgola)</Label>
-            <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="domicilio, weekend..." />
+            <Label>Tag</Label>
+            <p className="mb-2 text-xs text-[#1A1A1A]/55">
+              Seleziona tutti i tag che ti rappresentano. Aiuteranno gli utenti a trovarti.
+            </p>
+            {availableTags.length === 0 ? (
+              <p className="text-xs text-[#1A1A1A]/40">Caricamento...</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((t) => {
+                  const active = selectedTagIds.has(t.id);
+                  return (
+                    <button
+                      type="button"
+                      key={t.id}
+                      onClick={() => toggleTag(t.id)}
+                      className={`rounded-full px-3 py-1.5 text-sm transition-colors duration-150 ease-out ${
+                        active
+                          ? 'bg-[#E91E8C] text-white ring-1 ring-[#E91E8C]'
+                          : 'bg-white text-[#1A1A1A]/70 ring-1 ring-[#1A1A1A]/15 hover:ring-[#E91E8C]/40 hover:text-[#1A1A1A]'
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {t.nome}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {selectedTagIds.size > 0 && (
+              <p className="mt-2 text-xs text-[#1A1A1A]/50">
+                {selectedTagIds.size} {selectedTagIds.size === 1 ? 'tag selezionato' : 'tag selezionati'}
+              </p>
+            )}
           </div>
           <div>
             <Label>Bio / Descrizione</Label>
             <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} />
           </div>
           <div>
+            <Label>Stato</Label>
+            <Input
+              value={stato}
+              onChange={(e) => setStato(e.target.value)}
+              maxLength={80}
+              placeholder='Es. "Sempre disponibile", "Contattami subito"…'
+            />
+            <p className="mt-1 text-xs text-[#1A1A1A]/55">
+              Frase breve mostrata sotto il tuo nome nella card. Potrai modificarla in qualsiasi momento dalla dashboard.
+            </p>
+          </div>
+          <div>
+            <Label>Link OnlyFans</Label>
+            <Input
+              type="url"
+              value={onlyfansUrl}
+              onChange={(e) => setOnlyfansUrl(e.target.value)}
+              placeholder="https://onlyfans.com/tuo_profilo"
+            />
+          </div>
+          <div>
+            <Label>Link Instagram</Label>
+            <Input
+              type="url"
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+              placeholder="https://instagram.com/tuo_profilo"
+            />
+          </div>
+          <div>
+            <Label>Link Facebook</Label>
+            <Input
+              type="url"
+              value={facebookUrl}
+              onChange={(e) => setFacebookUrl(e.target.value)}
+              placeholder="https://facebook.com/tuo_profilo"
+            />
+          </div>
+          <div>
+            <Label>Link TikTok</Label>
+            <Input
+              type="url"
+              value={tiktokUrl}
+              onChange={(e) => setTiktokUrl(e.target.value)}
+              placeholder="https://tiktok.com/@tuo_profilo"
+            />
+          </div>
+          <div>
+            <Label>Link Telegram</Label>
+            <Input
+              type="url"
+              value={telegramUrl}
+              onChange={(e) => setTelegramUrl(e.target.value)}
+              placeholder="https://t.me/tuo_profilo"
+            />
+          </div>
+          <div>
             <Label>Telefono *</Label>
             <Input value={telefono} onChange={(e) => setTelefono(e.target.value)} required />
           </div>
-          <div>
-            <Label>Via / Indirizzo *</Label>
-            <Input value={via} onChange={(e) => setVia(e.target.value)} placeholder="Via Roma 42" required />
+
+          {/* INDIRIZZO PUBBLICO */}
+          <div className="rounded-xl border border-[#E91E8C]/20 bg-[#E91E8C]/[0.04] p-4">
+            <h3 className="mb-1 text-sm font-bold text-[#E91E8C]">Indirizzo</h3>
+            <p className="mb-3 text-xs text-[#1A1A1A]/70">
+              Questo è l&apos;indirizzo <strong>visibile a tutti gli utenti</strong> sul sito e sulla mappa. <strong>Potrai modificarlo in qualsiasi momento</strong> dalla dashboard.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <Label>Via / Indirizzo *</Label>
+                <Input value={via} onChange={(e) => setVia(e.target.value)} placeholder="Via Roma 42" required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>CAP *</Label>
+                  <Input value={cap} onChange={(e) => setCap(e.target.value)} placeholder="20121" maxLength={5} required />
+                </div>
+                <div>
+                  <Label>Città *</Label>
+                  <Input value={citta} onChange={(e) => setCitta(e.target.value)} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Provincia (sigla) *</Label>
+                  <Input value={provincia} onChange={(e) => setProvincia(e.target.value.toUpperCase())} placeholder="MI" maxLength={2} required />
+                </div>
+                <div>
+                  <Label>Stato</Label>
+                  <Input value={nazione} onChange={(e) => setNazione(e.target.value)} />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>CAP *</Label>
-              <Input value={cap} onChange={(e) => setCap(e.target.value)} placeholder="20121" maxLength={5} required />
-            </div>
-            <div>
-              <Label>Città *</Label>
-              <Input value={citta} onChange={(e) => setCitta(e.target.value)} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Provincia (sigla) *</Label>
-              <Input value={provincia} onChange={(e) => setProvincia(e.target.value.toUpperCase())} placeholder="MI" maxLength={2} required />
-            </div>
-            <div>
-              <Label>Stato</Label>
-              <Input value={nazione} onChange={(e) => setNazione(e.target.value)} />
-            </div>
-          </div>
+
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(0)}>Indietro</Button>
             <Button onClick={handleStep2} className="flex-1 bg-[#E91E8C] text-white hover:bg-[#D11A7D]">Continua</Button>
@@ -276,9 +451,27 @@ export default function RegistrazionePage() {
       {/* Step 4 — Identity */}
       {step === 3 && (
         <div className="space-y-4">
-          <p className="rounded-lg bg-[#E91E8C]/5 p-3 text-sm text-[#1A1A1A]/60">
-            Il documento è visibile solo al team di moderazione. Non sarà mai pubblicato pubblicamente.
+          <p className="rounded-lg bg-[#E91E8C]/5 p-3 text-sm text-[#1A1A1A]/70">
+            <strong>Verifica età automatica.</strong> La data di nascita che inserisci <em>deve combaciare</em> con quella riportata sul documento d&apos;identità che caricherai qui sotto: <strong>se i due dati non combaciano, il profilo non verrà creato</strong>. Il documento è visibile solo al team di moderazione e non sarà mai reso pubblico.
           </p>
+          <div>
+            <Label>Data di nascita *</Label>
+            <Input
+              type="date"
+              value={dataNascita}
+              onChange={(e) => setDataNascita(e.target.value)}
+              min={minBirthDate}
+              max={maxBirthDate}
+              required
+            />
+            {etaCorrente !== null && (
+              <p className={`mt-1 text-xs ${etaCorrente >= 18 ? 'text-[#1A1A1A]/60' : 'text-red-600'}`}>
+                {etaCorrente >= 18
+                  ? `Età: ${etaCorrente} anni`
+                  : `Devi avere almeno 18 anni per registrarti (attualmente ${etaCorrente}).`}
+              </p>
+            )}
+          </div>
           <div>
             <Label>Documento fronte *</Label>
             <input
@@ -320,13 +513,15 @@ export default function RegistrazionePage() {
       {step === 4 && (
         <div className="rounded-2xl border border-[#1A1A1A]/10 bg-white p-8 text-center">
           <div className="mb-4 text-5xl">✓</div>
-          <h2 className="mb-2 text-2xl font-bold text-[#1A1A1A]">Richiesta inviata!</h2>
-          <p className="mb-6 text-[#1A1A1A]/60">
-            Il tuo profilo sarà visibile dopo la verifica del documento da parte del nostro team.
-            Riceverai una notifica via email.
+          <h2 className="mb-2 text-2xl font-bold text-[#1A1A1A]">Verifica età completata</h2>
+          <p className="mb-2 text-[#1A1A1A]/70">
+            Profilo creato correttamente.
           </p>
-          <Button onClick={() => router.push('/dashboard')} className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
-            Vai alla dashboard
+          <p className="mb-6 text-sm text-[#1A1A1A]/60">
+            Per pubblicarlo e renderlo visibile agli utenti, scegli ora un abbonamento.
+          </p>
+          <Button onClick={() => router.push('/abbonamento')} className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
+            Procedi al pagamento
           </Button>
         </div>
       )}

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, Sparkles, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ProfessionistaCard from '@/components/ProfessionistaCard';
 import Carousel from '@/components/Carousel';
 import StarRating from '@/components/StarRating';
+import PromoBanner from '@/components/PromoBanner';
 import { professionisteApi, recensioniApi } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
@@ -50,13 +52,13 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#1A1A1A] py-24 text-white">
+      <section className="relative overflow-hidden bg-[#1A1A1A] py-16 text-white sm:py-20 md:py-24">
         <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/20 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 text-left">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl">
             Le migliori <span className="text-[#E91E8C]">ragazze</span><br />a 5 stelle
           </h1>
-          <p className="mt-4 text-lg text-white/70 max-w-2xl">
+          <p className="mt-3 max-w-2xl text-base text-white/70 sm:mt-4 sm:text-lg">
             Scopri le migliori professioniste di Massaggi, Yoga e Relax vicino a te. Sfoglia i profili, leggi le recensioni e trova la persona giusta per il tuo benessere in pochi click.
           </p>
         </div>
@@ -66,10 +68,10 @@ export default function HomePage() {
       <section className="relative z-10 -mt-8 px-4">
         <form
           onSubmit={handleSearch}
-          className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 rounded-2xl border border-[#1A1A1A]/10 bg-white p-4 shadow-lg"
+          className="mx-auto max-w-4xl space-y-3 rounded-2xl border border-[#1A1A1A]/10 bg-white p-4 shadow-lg sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0"
         >
-          <div className="flex flex-1 items-center gap-2">
-            <Search className="h-5 w-5 text-[#1A1A1A]/40" />
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 sm:border-0 sm:px-0">
+            <Search className="h-5 w-5 flex-shrink-0 text-[#1A1A1A]/40" />
             <Input
               placeholder="Cerca per nome o parola chiave..."
               value={search}
@@ -77,40 +79,63 @@ export default function HomePage() {
               className="border-0 bg-transparent shadow-none focus-visible:ring-0"
             />
           </div>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
-          >
-            <option value="">Tutte le categorie</option>
-            <option value="massaggi">Massaggi</option>
-            <option value="yoga">Yoga</option>
-            <option value="relax">Relax</option>
-          </select>
-          <select
-            value={distanza}
-            onChange={(e) => setDistanza(e.target.value)}
-            className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
-          >
-            <option value="">Distanza</option>
-            <option value="5">5 km</option>
-            <option value="10">10 km</option>
-            <option value="25">25 km</option>
-            <option value="50">50 km</option>
-          </select>
-          <Button type="submit" className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
+          <div className="grid grid-cols-2 gap-2 sm:contents">
+            <select
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
+            >
+              <option value="">Tutte le categorie</option>
+              <option value="massaggi">Massaggi</option>
+              <option value="yoga">Yoga</option>
+              <option value="relax">Relax</option>
+            </select>
+            <select
+              value={distanza}
+              onChange={(e) => setDistanza(e.target.value)}
+              className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
+            >
+              <option value="">Distanza</option>
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="25">25 km</option>
+              <option value="50">50 km</option>
+            </select>
+          </div>
+          <Button type="submit" className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D] sm:w-auto">
             Cerca
           </Button>
         </form>
+
+        {/* CTA — registrazione professionista */}
+        <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E91E8C]/25 bg-gradient-to-r from-[#E91E8C]/[0.06] to-transparent px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
+              <Sparkles className="h-5 w-5 text-[#E91E8C]" />
+            </div>
+            <div>
+              <p className="font-semibold text-[#1A1A1A]">Sei una professionista?</p>
+              <p className="text-sm text-[#1A1A1A]/65">
+                Crea il tuo profilo in meno di 3 minuti e fatti trovare da nuovi clienti.
+              </p>
+            </div>
+          </div>
+          <Link href="/registrazione">
+            <Button className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
+              Iscriviti ora
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* Featured */}
       {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-16">
-          <h2 className="mb-8 text-2xl font-bold text-[#1A1A1A]">Le più apprezzate</h2>
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:py-12 md:py-16">
+          <h2 className="mb-6 text-xl font-bold text-[#1A1A1A] sm:mb-8 sm:text-2xl">Le più apprezzate</h2>
           <Carousel>
             {featured.map((p) => (
-              <div key={p.id} className="w-[260px] flex-shrink-0">
+              <div key={p.id} className="w-[260px] xl:w-[330px] flex-shrink-0">
                 <ProfessionistaCard professionista={p} userLat={geo.lat} userLng={geo.lng} />
               </div>
             ))}
@@ -118,9 +143,14 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* Promo banner (modificabile da Django admin) */}
+      <section className="mx-auto max-w-7xl px-4 pb-4">
+        <PromoBanner posizione="homepage_middle" />
+      </section>
+
       {/* Nearby */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="mb-8 text-2xl font-bold text-[#1A1A1A]">Vicino a te</h2>
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:py-12 md:py-16">
+        <h2 className="mb-6 text-xl font-bold text-[#1A1A1A] sm:mb-8 sm:text-2xl">Vicino a te</h2>
         {!geo.lat && !geo.loading && (
           <p className="mb-6 rounded-lg bg-[#E91E8C]/5 p-4 text-sm text-[#1A1A1A]/60">
             Attiva la geolocalizzazione per vedere le professioniste più vicine a te.
@@ -141,10 +171,10 @@ export default function HomePage() {
 
       {/* Site Reviews */}
       {siteReviews.length > 0 && (
-        <section id="recensioni" className="bg-[#1A1A1A] py-16">
+        <section id="recensioni" className="bg-[#1A1A1A] py-10 sm:py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 text-center text-2xl font-bold text-white">Cosa dicono di noi</h2>
-            <div className="grid gap-6 md:grid-cols-3">
+            <h2 className="mb-6 text-center text-xl font-bold text-white sm:mb-8 sm:text-2xl">Cosa dicono di noi</h2>
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-3">
               {siteReviews.map((r: any) => (
                 <div key={r.id} className="rounded-xl border border-white/10 bg-white/5 p-6">
                   <StarRating value={r.stelle} readonly size="sm" />

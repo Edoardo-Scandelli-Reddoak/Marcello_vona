@@ -22,11 +22,14 @@ interface MapViewProps {
   className?: string;
 }
 
-const pinColors: Record<string, string> = {
-  massaggi: '#E91E8C',
-  yoga: '#1A1A1A',
-  relax: '#888888',
-};
+const PIN_COLOR = '#E91E8C';
+
+const PIN_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 44" width="32" height="44" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));">
+  <path d="M16 0C7.16 0 0 7.16 0 16c0 11.5 16 28 16 28s16-16.5 16-28C32 7.16 24.84 0 16 0z" fill="${PIN_COLOR}" stroke="#ffffff" stroke-width="2" />
+  <circle cx="16" cy="16" r="5.5" fill="#ffffff" />
+</svg>
+`.trim();
 
 export default function MapView({ markers, center = [41.9028, 12.4964], className }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -56,17 +59,18 @@ export default function MapView({ markers, center = [41.9028, 12.4964], classNam
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
 
-      markers.forEach((m) => {
-        const color = pinColors[m.categoria_slug] || '#E91E8C';
-        const circle = L.circleMarker([m.latitudine, m.longitudine], {
-          radius: 10,
-          fillColor: color,
-          color: m.categoria_slug === 'relax' ? '#1A1A1A' : color,
-          weight: 2,
-          fillOpacity: 0.9,
-        }).addTo(map);
+      const pinIcon = L.divIcon({
+        className: 'directory-pin',
+        html: PIN_SVG,
+        iconSize: [32, 44],
+        iconAnchor: [16, 44],
+        popupAnchor: [0, -40],
+      });
 
-        circle.bindPopup(`
+      markers.forEach((m) => {
+        const marker = L.marker([m.latitudine, m.longitudine], { icon: pinIcon }).addTo(map);
+
+        marker.bindPopup(`
           <div style="display:flex;align-items:center;gap:10px;padding:4px;min-width:180px;">
             <img src="${mediaUrl(m.foto_profilo)}" alt="${m.nome}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" />
             <div>

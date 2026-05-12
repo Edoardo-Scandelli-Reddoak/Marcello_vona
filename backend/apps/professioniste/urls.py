@@ -8,6 +8,7 @@ urlpatterns = [
     path('professioniste/map/', views.MapProfessionisteView.as_view(), name='professioniste-map'),
     path('professioniste/register/', views.ProfessionistaCreateView.as_view(), name='professioniste-register'),
     path('professioniste/dashboard/', views.ProfessionistaDashboardView.as_view(), name='professioniste-dashboard'),
+    path('professioniste/dashboard/mi-trovo-qui/', views.MiTrovoQuiView.as_view(), name='professioniste-mi-trovo-qui'),
     path('professioniste/<slug:slug>/', views.ProfessionistaDetailView.as_view(), name='professioniste-detail'),
     path('professioniste/<slug:slug>/telefono/', views.reveal_telefono, name='professioniste-telefono'),
     path('categorie/', views.CategoriaListView.as_view(), name='categorie-list'),

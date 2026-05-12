@@ -8,6 +8,11 @@ urlpatterns = [
     path('api/auth/', include('apps.accounts.urls')),
     path('api/', include('apps.professioniste.urls')),
     path('api/', include('apps.reviews.urls')),
+    path('api/', include('apps.banners.urls')),
+    path('api/', include('apps.abbonamenti.urls')),
+    path('api/', include('apps.preferiti.urls')),
+    path('api/', include('apps.sblocchi.urls')),
+    path('api/', include('apps.notifiche.urls')),
 ]
 
 if settings.DEBUG:

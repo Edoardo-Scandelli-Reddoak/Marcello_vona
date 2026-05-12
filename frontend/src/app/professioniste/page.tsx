@@ -94,22 +94,22 @@ export default function ProfessionistePage() {
   const totalPages = Math.ceil(totalCount / 12);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       {/* Header */}
-      <h1 className="mb-6 text-3xl font-bold text-[#1A1A1A]">Professioniste</h1>
+      <h1 className="mb-4 text-2xl font-bold text-[#1A1A1A] sm:mb-6 sm:text-3xl">Professioniste</h1>
 
       {/* Search & Filters */}
       <form onSubmit={handleSearch} className="mb-6 space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-[#1A1A1A]/10 bg-white px-3">
-            <Search className="h-4 w-4 text-[#1A1A1A]/40" />
-            <Input
-              placeholder="Cerca..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-            />
-          </div>
+        <div className="flex items-center gap-2 rounded-lg border border-[#1A1A1A]/10 bg-white px-3">
+          <Search className="h-4 w-4 flex-shrink-0 text-[#1A1A1A]/40" />
+          <Input
+            placeholder="Cerca..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
@@ -153,7 +153,9 @@ export default function ProfessionistePage() {
               </option>
             ))}
           </select>
-          <Button type="submit" className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" className="flex-1 bg-[#E91E8C] text-white hover:bg-[#D11A7D] sm:flex-none">
             Cerca
           </Button>
           <Button type="button" variant="ghost" onClick={resetFilters}>
@@ -162,9 +164,9 @@ export default function ProfessionistePage() {
         </div>
 
         {/* Sort + View Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-[#1A1A1A]/60">{totalCount} professioniste trovate</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-[#1A1A1A]/60">{totalCount} {totalCount === 1 ? 'risultato' : 'risultati'}</span>
             <select
               value={ordering}
               onChange={(e) => { setOrdering(e.target.value); setPage(1); }}
@@ -177,6 +179,7 @@ export default function ProfessionistePage() {
           </div>
           <div className="flex rounded-lg border border-[#1A1A1A]/10 bg-white">
             <button
+              type="button"
               onClick={() => setView('list')}
               className={`rounded-l-lg p-2 ${view === 'list' ? 'bg-[#E91E8C] text-white' : 'text-[#1A1A1A]/40'}`}
               aria-label="Vista lista"
@@ -184,6 +187,7 @@ export default function ProfessionistePage() {
               <List className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={() => setView('map')}
               className={`rounded-r-lg p-2 ${view === 'map' ? 'bg-[#E91E8C] text-white' : 'text-[#1A1A1A]/40'}`}
               aria-label="Vista mappa"
@@ -199,7 +203,7 @@ export default function ProfessionistePage() {
         <div className="py-20 text-center text-[#1A1A1A]/40">Caricamento...</div>
       ) : view === 'list' ? (
         <>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {results.map((p) => (
               <ProfessionistaCard key={p.id} professionista={p} userLat={geo.lat} userLng={geo.lng} />
             ))}

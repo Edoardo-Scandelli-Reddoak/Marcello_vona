@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Star, MapPin, Heart } from 'lucide-react';
-import { mediaUrl } from '@/lib/api';
+import { mediaUrl, preferitiApi } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import AuthRequiredModal from '@/components/AuthRequiredModal';
 
 interface ProfessionistaCardProps {
   professionista: {
@@ -19,6 +22,7 @@ interface ProfessionistaCardProps {
     longitudine: number | null;
     rating: number;
     numero_recensioni: number;
+    stato?: string;
   };
   userLat?: number | null;
   userLng?: number | null;
@@ -44,22 +48,46 @@ const categoriaStyle: Record<string, { bg: string; text: string }> = {
 
 export default function ProfessionistaCard({ professionista, userLat, userLng }: ProfessionistaCardProps) {
   const p = professionista;
+  const { user } = useAuth();
+  const [isFav, setIsFav] = useState<boolean>(Boolean((p as any).is_favorite));
+  const [favLoading, setFavLoading] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const distance =
     userLat && userLng && p.latitudine && p.longitudine
       ? haversine(userLat, userLng, p.latitudine, p.longitudine)
       : null;
   const style = categoriaStyle[p.categoria_slug] || categoriaStyle.massaggi;
 
+  const handleFav = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+    if (favLoading) return;
+    setFavLoading(true);
+    try {
+      const res = await preferitiApi.toggle(p.id);
+      setIsFav(res.is_favorite);
+    } catch {
+      // swallow
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
   return (
+    <>
     <Link href={`/professioniste/${p.slug}`} className="group block">
-      <div className="overflow-hidden rounded-2xl bg-white border border-[#1A1A1A]/[0.06] transition-all duration-300 hover:shadow-xl hover:shadow-[#E91E8C]/[0.06] hover:-translate-y-1">
+      <div className="overflow-hidden rounded-2xl bg-white border border-[#1A1A1A]/[0.06] transform-gpu will-change-transform [backface-visibility:hidden] transition-[transform,box-shadow] duration-300 ease-out hover:shadow-xl hover:shadow-[#E91E8C]/[0.06] hover:-translate-y-1">
         {/* Image with overlay gradient */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <Image
             src={mediaUrl(p.foto_profilo)}
             alt={p.nome}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
           />
           {/* Gradient overlay at bottom */}
@@ -67,11 +95,16 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
 
           {/* Favorite button */}
           <button
-            className="absolute right-3 top-3 rounded-full bg-white/80 p-2 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
-            onClick={(e) => { e.preventDefault(); }}
-            aria-label="Salva nei preferiti"
+            className="absolute right-3 top-3 rounded-full bg-white/80 p-2 backdrop-blur-sm transform-gpu transition-[transform,background-color] duration-200 ease-out hover:bg-white hover:scale-110 disabled:opacity-50"
+            onClick={handleFav}
+            disabled={favLoading}
+            aria-label={isFav ? 'Rimuovi dai preferiti' : 'Salva nei preferiti'}
+            aria-pressed={isFav}
           >
-            <Heart className="h-4 w-4 text-[#E91E8C]" />
+            <Heart
+              className="h-4 w-4 text-[#E91E8C]"
+              fill={isFav ? '#E91E8C' : 'none'}
+            />
           </button>
 
           {/* Category badge on image */}
@@ -81,15 +114,19 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
             </span>
           </div>
 
-          {/* Name + location overlay at bottom of image */}
+          {/* Top: name. Bottom row: status (left) + city (right) — same level */}
           <div className="absolute inset-x-0 bottom-0 p-4">
-            <h3 className="text-lg font-bold text-white leading-tight">{p.nome}</h3>
-            <div className="mt-1 flex items-center gap-1.5 text-white/80">
-              <MapPin className="h-3 w-3" />
-              <span className="text-xs">{p.citta}{p.provincia ? ` (${p.provincia})` : ''}</span>
-              {distance !== null && (
-                <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm">
-                  {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)} km`}
+            <h3 className="text-lg font-bold leading-tight text-white drop-shadow-sm">
+              {p.nome}
+            </h3>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="line-clamp-1 text-xs font-medium text-white/85 drop-shadow-sm">
+                {p.stato || ' '}
+              </p>
+              {p.citta && (
+                <span className="inline-flex flex-shrink-0 items-center gap-1 text-xs text-white/85 drop-shadow-sm">
+                  <MapPin className="h-3 w-3" aria-hidden="true" />
+                  {p.citta}
                 </span>
               )}
             </div>
@@ -119,5 +156,11 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
         </div>
       </div>
     </Link>
+    <AuthRequiredModal
+      open={authModalOpen}
+      onClose={() => setAuthModalOpen(false)}
+      message={`Per salvare ${p.nome} nei preferiti devi avere un account.`}
+    />
+    </>
   );
 }

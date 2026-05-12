@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const search = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +23,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push('/');
+      const next = search.get('next') || '/';
+      router.push(next);
     } catch (err: any) {
       setError(err.message || 'Credenziali non valide.');
     } finally {
@@ -36,7 +38,7 @@ export default function LoginPage() {
         <h1 className="mb-2 text-3xl font-bold text-[#1A1A1A]">Accedi</h1>
         <p className="mb-8 text-[#1A1A1A]/60">
           Non hai un account?{' '}
-          <Link href="/registrazione" className="text-[#E91E8C] hover:underline">
+          <Link href="/registrati" className="text-[#E91E8C] hover:underline">
             Registrati
           </Link>
         </p>
