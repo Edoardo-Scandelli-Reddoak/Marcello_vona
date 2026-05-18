@@ -7,4 +7,7 @@ Dockerfile
 .env
 .env.local
 staticfiles
-media
+# NOTA: NON escludere `media/` — la cartella `media/escort/` contiene le
+# foto demo che servono al seed_demo e devono essere dentro l'image Docker.
+# Gli upload utente sono comunque effimeri (filesystem Railway), per quello
+# servirà S3/R2 in futuro.
