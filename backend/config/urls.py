@@ -15,5 +15,8 @@ urlpatterns = [
     path('api/', include('apps.notifiche.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# In produzione su Railway non c'è un nginx davanti a Django, quindi serviamo
+# direttamente i file media dal processo gunicorn anche con DEBUG=False.
+# Per traffico significativo (e per persistenza degli upload utente) andrà
+# sostituito con S3/R2 — i container Railway hanno filesystem effimero.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
