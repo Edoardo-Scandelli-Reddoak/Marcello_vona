@@ -22,8 +22,13 @@ staticfiles/
 .DS_Store
 Thumbs.db
 
-# Media uploads
-backend/media/
+# Media uploads (gli upload utente sono effimeri su Railway).
+# Pattern con /* per non ignorare la directory stessa, così le eccezioni
+# `!escort/` dentro funzionano correttamente (regola dei gitignore: non
+# puoi "unignore" un file se il suo parent dir è già ignorato).
+backend/media/*
+!backend/media/escort/
+!backend/media/escort/**
 
 # Docker
 postgres_data/
