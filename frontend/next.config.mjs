@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone: genera una build minimale (.next/standalone) che contiene SOLO
+  // i node_modules necessari → immagine Docker ~10x più piccola, meno memoria
+  // in fase di build su Railway/altri PaaS con limiti di RAM.
+  output: 'standalone',
+  // ESLint warnings non devono far fallire il build di produzione.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

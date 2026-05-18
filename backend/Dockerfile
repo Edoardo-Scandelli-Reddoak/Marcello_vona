@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,16 +21,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Pre-genera staticfiles in fase di build (Railway li serve via whitenoise).
-# Usa una SECRET_KEY dummy: i settings reali arrivano da env in runtime.
+# Pre-genera staticfiles a build-time (Railway li serve via whitenoise).
+# Usa SECRET_KEY dummy + sqlite: i settings reali arrivano da env a runtime.
 RUN DJANGO_SECRET_KEY=build-only-not-used \
     DJANGO_DEBUG=False \
     DATABASE_URL=sqlite:///tmp/build.db \
     python manage.py collectstatic --noinput
 
-# Railway inietta $PORT dinamicamente: il container deve bindare lì.
-# - Migrazioni e seed_categories ad ogni deploy.
-# - Gunicorn con 3 workers (Railway hobby ha poche risorse: alza solo se serve).
-CMD sh -c "python manage.py migrate --noinput && \
-    python manage.py seed_categories || true && \
-    gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 60 --access-logfile - --error-logfile -"
+# Wrapper script che esegue migrate + gunicorn (vedi start.sh).
+RUN chmod +x ./start.sh
+EXPOSE 8000
+CMD ["./start.sh"]
