@@ -8,7 +8,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+
+
+# Helper: scarta valori non-validi (vuoti o senza host). Serve a sopravvivere
+# alle Railway references non ancora risolte: una variabile tipo
+# `https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}` si espande a `https://` se il
+# servizio referenziato non ha ancora un dominio. Senza questo filtro, il
+# system check di Django/CORS fa crashare il container al boot.
+def _valid_origins(raw: str) -> list[str]:
+    from urllib.parse import urlparse
+    items = []
+    for o in (raw or '').split(','):
+        o = o.strip()
+        if not o:
+            continue
+        parsed = urlparse(o)
+        if not parsed.scheme or not parsed.netloc:
+            continue
+        items.append(o)
+    return items
+
+
+def _valid_hosts(raw: str) -> list[str]:
+    return [h.strip() for h in (raw or '').split(',') if h.strip()]
+
+
+ALLOWED_HOSTS = _valid_hosts(os.environ.get('ALLOWED_HOSTS', '*'))
 
 # Railway inietta automaticamente RAILWAY_PUBLIC_DOMAIN sui servizi pubblici:
 # aggiungiamo quel dominio agli ALLOWED_HOSTS così non serve farlo a mano.
@@ -18,9 +43,7 @@ if _railway_domain and _railway_domain not in ALLOWED_HOSTS:
 
 # CSRF_TRUSTED_ORIGINS: necessario per il Django admin via HTTPS in produzione.
 # Va valorizzato con gli URL completi (schema + host), separati da virgola.
-CSRF_TRUSTED_ORIGINS = [
-    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
-]
+CSRF_TRUSTED_ORIGINS = _valid_origins(os.environ.get('CSRF_TRUSTED_ORIGINS', ''))
 if _railway_domain:
     railway_url = f'https://{_railway_domain}'
     if railway_url not in CSRF_TRUSTED_ORIGINS:
@@ -114,10 +137,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    'CORS_ALLOWED_ORIGINS', 'http://localhost:3000'
-).split(',')
+# CORS — _valid_origins è già definita in cima al file e filtra origin senza host.
+CORS_ALLOWED_ORIGINS = _valid_origins(
+    os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
+)
 CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework
