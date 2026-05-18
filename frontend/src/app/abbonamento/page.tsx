@@ -21,13 +21,13 @@ function formatGiorni(g: number): string {
 }
 
 const STANDARD_FEATURES = [
-  'Profilo pubblicato e visibile',
+  'Scheda pubblicata e visibile',
   'Inclusione nei risultati di ricerca',
   'Recensioni dei clienti',
 ];
 
 const EVIDENZA_FEATURES = [
-  'Profilo pubblicato e visibile',
+  'Scheda pubblicata e visibile',
   'In evidenza tra "Le più apprezzate"',
   'Posizionamento prioritario nei risultati',
 ];
@@ -84,8 +84,8 @@ export default function AbbonamentoPage() {
       const msg = e.message || 'Errore durante il checkout.';
       if (msg.toLowerCase().includes('credenziali')) {
         setError('Devi essere loggato per acquistare. Effettua il login e riprova.');
-      } else if (msg.toLowerCase().includes('profilo')) {
-        setError('Devi prima completare la registrazione del profilo professionista.');
+      } else if (msg.toLowerCase().includes('profilo') || msg.toLowerCase().includes('scheda')) {
+        setError('Devi prima completare la registrazione della tua scheda escort.');
       } else {
         setError(msg);
       }
@@ -145,7 +145,7 @@ export default function AbbonamentoPage() {
         {standard.length > 0 && (
           <PianoBox
             title="Standard"
-            subtitle="Pubblica il tuo profilo"
+            subtitle="Pubblica la tua scheda"
             piani={standard}
             features={STANDARD_FEATURES}
             onPurchase={handlePurchase}

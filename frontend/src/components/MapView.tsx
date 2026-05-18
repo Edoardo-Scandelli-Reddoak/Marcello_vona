@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { mediaUrl } from '@/lib/api';
 
 interface MapMarker {
@@ -76,7 +75,7 @@ export default function MapView({ markers, center = [41.9028, 12.4964], classNam
             <div>
               <div style="font-weight:600;font-size:14px;">${m.nome}</div>
               <div style="font-size:11px;color:#666;">${m.categoria_nome} — ${m.rating}★</div>
-              <a href="/professioniste/${m.slug}" style="font-size:11px;color:#E91E8C;">Vedi profilo →</a>
+              <a href="/escort/${m.slug}" style="font-size:11px;color:#E91E8C;">Vedi profilo →</a>
             </div>
           </div>
         `);

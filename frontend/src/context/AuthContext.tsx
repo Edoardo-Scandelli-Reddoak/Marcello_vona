@@ -6,7 +6,7 @@ import { authApi } from '@/lib/api';
 interface User {
   id: number;
   email: string;
-  user_type: 'user' | 'professionista';
+  user_type: 'user' | 'escort';
   first_name: string;
   last_name: string;
 }

@@ -8,8 +8,13 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Directory Professioniste — Massaggi, Yoga, Relax',
-  description: 'Trova le migliori professioniste di Massaggi, Yoga e Relax vicino a te.',
+  title: 'Directory Escort — Donna, Trans e Coppia',
+  description:
+    'Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!',
+  icons: {
+    icon: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+  },
 };
 
 export const viewport: Viewport = {

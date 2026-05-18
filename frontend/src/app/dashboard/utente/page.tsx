@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ProfessionistaCard from '@/components/ProfessionistaCard';
+import EscortCard from '@/components/EscortCard';
 import { preferitiApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -20,7 +20,7 @@ export default function DashboardUtentePage() {
       router.push('/login');
       return;
     }
-    if (!authLoading && user?.user_type === 'professionista') {
+    if (!authLoading && user?.user_type === 'escort') {
       router.replace('/dashboard');
       return;
     }
@@ -60,18 +60,18 @@ export default function DashboardUtentePage() {
             <Heart className="mx-auto mb-3 h-10 w-10 text-[#1A1A1A]/20" />
             <h3 className="font-semibold text-[#1A1A1A]">Nessun preferito ancora</h3>
             <p className="mt-1 text-sm text-[#1A1A1A]/55">
-              Sfoglia le professioniste e clicca il cuoricino per salvarle qui.
+              Sfoglia le escort e clicca il cuoricino per salvarle qui.
             </p>
-            <Link href="/professioniste">
+            <Link href="/escort">
               <Button className="mt-4 bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
-                Sfoglia professioniste
+                Sfoglia escort
               </Button>
             </Link>
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {preferiti.map((p) => (
-              <ProfessionistaCard key={p.id} professionista={p} />
+              <EscortCard key={p.id} escort={p} />
             ))}
           </div>
         )}

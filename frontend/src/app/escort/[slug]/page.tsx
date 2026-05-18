@@ -4,31 +4,44 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { MapPin, Phone, Heart, Star, ArrowLeft, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Heart, Star, ArrowLeft, MessageCircle, Lock, Clock, Tag as TagIcon, Home, Car } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
-import { professionisteApi, recensioniApi, preferitiApi, sblocchiApi, mediaUrl } from '@/lib/api';
+import { escortApi, recensioniApi, preferitiApi, sblocchiApi, mediaUrl } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
-import { Lock } from 'lucide-react';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 const categoriaStyle: Record<string, { bg: string; text: string }> = {
-  massaggi: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
-  yoga: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
-  relax: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  donna: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
+  trans: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
+  coppia: { bg: 'bg-amber-50', text: 'text-amber-700' },
 };
 
-export default function ProfiloPage() {
+const LEGACY_SLUG_MAP: Record<string, keyof typeof categoriaStyle> = {
+  massaggi: 'donna',
+  yoga: 'trans',
+  relax: 'coppia',
+};
+
+const LABEL_LEGACY: Record<string, string> = {
+  Massaggi: 'Donna',
+  Yoga: 'Trans',
+  Relax: 'Coppia',
+  massaggi: 'Donna',
+  yoga: 'Trans',
+  relax: 'Coppia',
+};
+
+export default function SchedaEscortPage() {
   const { slug } = useParams<{ slug: string }>();
   const search = useSearchParams();
   const { user } = useAuth();
 
-  const [professionista, setProfessionista] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [recensioni, setRecensioni] = useState<any[]>([]);
   const [telefono, setTelefono] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,10 +63,10 @@ export default function ProfiloPage() {
     if (!slug) return;
     setLoading(true);
     Promise.all([
-      professionisteApi.detail(slug),
+      escortApi.detail(slug),
       recensioniApi.list(slug),
     ]).then(([p, r]) => {
-      setProfessionista(p);
+      setProfile(p);
       setRecensioni(r);
       setIsFav(Boolean(p?.is_favorite));
     }).catch(() => {}).finally(() => setLoading(false));
@@ -64,10 +77,10 @@ export default function ProfiloPage() {
       setAuthModalOpen(true);
       return;
     }
-    if (favLoading || !professionista) return;
+    if (favLoading || !profile) return;
     setFavLoading(true);
     try {
-      const res = await preferitiApi.toggle(professionista.id);
+      const res = await preferitiApi.toggle(profile.id);
       setIsFav(res.is_favorite);
     } finally {
       setFavLoading(false);
@@ -79,15 +92,15 @@ export default function ProfiloPage() {
       setAuthModalOpen(true);
       return;
     }
-    if (unlockLoading || !professionista) return;
+    if (unlockLoading || !profile) return;
     setUnlockError('');
     setUnlockLoading(true);
     try {
-      const res = await sblocchiApi.checkout(professionista.id);
+      const res = await sblocchiApi.checkout(profile.id);
       if (res.already_unlocked) {
         // Ricarico il detail per ottenere i link sbloccati
-        const refreshed = await professionisteApi.detail(slug);
-        setProfessionista(refreshed);
+        const refreshed = await escortApi.detail(slug);
+        setProfile(refreshed);
         return;
       }
       if (res.redirect_url) {
@@ -107,7 +120,7 @@ export default function ProfiloPage() {
     if (telefono) return telefono;
     if (!slug) return null;
     try {
-      const data = await professionisteApi.revealTelefono(slug);
+      const data = await escortApi.revealTelefono(slug);
       setTelefono(data.telefono);
       return data.telefono;
     } catch {
@@ -124,7 +137,7 @@ export default function ProfiloPage() {
     const num = await ensureTelefono();
     if (!num) return;
     const waNumber = sanitizeForWa(num);
-    const text = encodeURIComponent(`Ciao ${professionista?.nome ?? ''}, ti scrivo dal sito Directory Professioniste!`);
+    const text = encodeURIComponent(`Ciao ${profile?.nome ?? ''}, ti scrivo dal sito Directory Escort!`);
     // Apre l'app WhatsApp se installata, altrimenti web.whatsapp.com
     window.open(`https://wa.me/${waNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
   };
@@ -153,29 +166,32 @@ export default function ProfiloPage() {
     );
   }
 
-  if (!professionista) {
+  if (!profile) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <p className="text-xl text-[#1A1A1A]/40">Professionista non trovata</p>
-        <Link href="/professioniste">
+        <p className="text-xl text-[#1A1A1A]/40">Scheda non trovata</p>
+        <Link href="/escort">
           <Button variant="outline">Torna alla lista</Button>
         </Link>
       </div>
     );
   }
 
-  const p = professionista;
+  const p = profile;
   const allImages = [
     { immagine: p.foto_profilo },
     ...(p.galleria || []),
   ];
-  const style = categoriaStyle[p.categoria_slug] || categoriaStyle.massaggi;
+  const slugKey = LEGACY_SLUG_MAP[p.categoria_slug] ?? p.categoria_slug;
+  const style = categoriaStyle[slugKey] || categoriaStyle.donna;
+  const categoriaBadge =
+    LABEL_LEGACY[p.categoria_nome] ?? LABEL_LEGACY[p.categoria_slug] ?? p.categoria_nome;
 
   return (
     <div className="min-h-screen bg-[#F8F7F5]">
       {/* Back button */}
       <div className="mx-auto max-w-7xl px-4 pt-6">
-        <Link href="/professioniste" className="inline-flex items-center gap-1.5 text-sm text-[#1A1A1A]/50 transition-colors hover:text-[#1A1A1A]">
+        <Link href="/escort" className="inline-flex items-center gap-1.5 text-sm text-[#1A1A1A]/50 transition-colors hover:text-[#1A1A1A]">
           <ArrowLeft className="h-4 w-4" />
           Torna alla lista
         </Link>
@@ -228,6 +244,25 @@ export default function ProfiloPage() {
                 </div>
               )}
             </div>
+
+            {/* Video gallery */}
+            {p.video && p.video.length > 0 && (
+              <div className="rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="mb-3 text-lg font-bold text-[#1A1A1A]">Video</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {p.video.map((v: any) => (
+                    <div key={v.id} className="overflow-hidden rounded-xl bg-[#F8F7F5]">
+                      <video
+                        src={mediaUrl(v.video)}
+                        className="aspect-video w-full object-cover"
+                        controls
+                        preload="metadata"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Bio Section */}
             <div className="rounded-2xl bg-white p-6 shadow-sm">
@@ -394,7 +429,7 @@ export default function ProfiloPage() {
                     Per lasciare una recensione devi avere un account.
                   </p>
                   <p className="mt-1 text-sm text-[#1A1A1A]/60">
-                    <Link href={`/login?next=/professioniste/${slug}`} className="font-medium text-[#E91E8C] hover:underline">
+                    <Link href={`/login?next=/escort/${slug}`} className="font-medium text-[#E91E8C] hover:underline">
                       Accedi
                     </Link>
                     {' '}o{' '}
@@ -437,77 +472,80 @@ export default function ProfiloPage() {
 
           {/* Right Column - Sticky Sidebar - 2/5 */}
           <div className="lg:col-span-2">
-            <div className="lg:sticky lg:top-24 space-y-4">
-              {/* Main Info Card */}
-              <div className="rounded-2xl bg-white p-6 shadow-sm">
+            {/* `max-h-[calc(100vh-7rem)]` + overflow-y-auto: se il contenuto è più alto del viewport
+                la sidebar scorre internamente invece di andare sotto al footer. */}
+            <div className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
+              {/* Main Info Card — layout centrato, dimensioni "via di mezzo" */}
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
                 {/* Profile photo */}
-                <div className="mb-4 flex justify-center">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-full ring-4 ring-[#E91E8C]/10">
+                <div className="mb-3 flex justify-center">
+                  <div className="relative h-24 w-24 overflow-hidden rounded-full ring-2 ring-[#E91E8C]/15">
                     <Image
                       src={mediaUrl(p.foto_profilo)}
                       alt={p.nome}
                       fill
                       className="object-cover"
-                      sizes="112px"
+                      sizes="96px"
                     />
                   </div>
                 </div>
 
-                {/* Info compatta: nome, stato, categoria, città, rating */}
                 <div className="text-center">
-                  <h1 className="text-2xl font-bold text-[#1A1A1A]">{p.nome}</h1>
-                  {p.stato && (
-                    <p className="mt-1 text-sm font-medium text-[#E91E8C]">
-                      {p.stato}
+                  <h1 className="text-xl font-bold text-[#1A1A1A]">{p.nome}</h1>
+
+                  {/* Città — Zona */}
+                  {p.citta && (
+                    <p className="mt-1 flex items-center justify-center gap-1 text-sm text-[#1A1A1A]/75">
+                      <MapPin className="h-3.5 w-3.5 text-[#E91E8C]" aria-hidden="true" />
+                      {p.citta}{p.zona ? ` — ${p.zona}` : ''}
                     </p>
                   )}
-                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${style.bg} ${style.text}`}>
-                      {p.categoria_nome}
+
+                  {/* Disponibilità */}
+                  {p.disponibilita && (
+                    <p className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[#1A1A1A]/65">
+                      {p.disponibilita === 'ricevo' && (<><Home className="h-3 w-3 text-[#E91E8C]" /> Ricevo</>)}
+                      {p.disponibilita === 'altrui' && (<><Car className="h-3 w-3 text-[#E91E8C]" /> Altrui</>)}
+                      {p.disponibilita === 'entrambe' && (<><Home className="h-3 w-3 text-[#E91E8C]" /> Ricevo / Altrui</>)}
+                    </p>
+                  )}
+
+                  {/* Stato */}
+                  {p.stato && (
+                    <p className="mt-1.5 text-sm font-medium text-[#E91E8C]">{p.stato}</p>
+                  )}
+
+                  {/* Riga compatta: categoria + rating */}
+                  <div className="mt-2.5 flex items-center justify-center gap-2 text-xs">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${style.bg} ${style.text}`}>
+                      {categoriaBadge}
                     </span>
-                    {p.citta && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F8F7F5] px-3 py-1 text-xs font-medium text-[#1A1A1A]/75 ring-1 ring-inset ring-[#1A1A1A]/[0.06]">
-                        <MapPin className="h-3 w-3 text-[#E91E8C]" aria-hidden="true" />
-                        {p.citta}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-3 flex items-center justify-center gap-1.5">
-                    <div className="flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 ${
-                            i < Math.round(p.rating)
-                              ? 'fill-[#E91E8C] text-[#E91E8C]'
-                              : 'fill-[#1A1A1A]/10 text-[#1A1A1A]/10'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-base font-bold text-[#1A1A1A]">{p.rating > 0 ? p.rating.toFixed(1) : '—'}</span>
-                    <span className="text-sm text-[#1A1A1A]/40">({p.numero_recensioni})</span>
+                    <span className="inline-flex items-center gap-1 font-medium text-[#1A1A1A]/75">
+                      <Star className="h-3.5 w-3.5 fill-[#E91E8C] text-[#E91E8C]" />
+                      <span className="text-sm font-bold text-[#1A1A1A]">{p.rating > 0 ? p.rating.toFixed(1) : '—'}</span>
+                      <span className="text-[#1A1A1A]/40">({p.numero_recensioni})</span>
+                    </span>
                   </div>
                 </div>
 
                 {/* Divider */}
-                <div className="my-5 border-t border-[#1A1A1A]/[0.06]" />
+                <div className="my-4 border-t border-[#1A1A1A]/[0.06]" />
 
                 {/* Contatti — Scrivimi (WhatsApp) + Chiamami (telefono) */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   <Button
                     onClick={handleScrivimi}
-                    className="h-auto w-full rounded-xl bg-[#E91E8C] px-4 py-3.5 text-base font-semibold text-white hover:bg-[#D11A7D]"
+                    className="h-auto w-full rounded-xl bg-[#E91E8C] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#D11A7D]"
                   >
-                    <MessageCircle className="mr-2 h-5 w-5" />
+                    <MessageCircle className="mr-2 h-4 w-4" />
                     Scrivimi
                   </Button>
                   <Button
                     onClick={handleChiamami}
                     variant="outline"
-                    className="h-auto w-full rounded-xl border-[#E91E8C]/30 px-4 py-3.5 text-base font-semibold text-[#E91E8C] hover:bg-[#E91E8C]/[0.06]"
+                    className="h-auto w-full rounded-xl border-[#E91E8C]/30 px-4 py-2.5 text-sm font-semibold text-[#E91E8C] hover:bg-[#E91E8C]/[0.06]"
                   >
-                    <Phone className="mr-2 h-5 w-5" />
+                    <Phone className="mr-2 h-4 w-4" />
                     Chiamami
                   </Button>
                 </div>
@@ -517,8 +555,8 @@ export default function ProfiloPage() {
                   variant="outline"
                   onClick={handleFav}
                   disabled={favLoading}
-                  className={`mt-3 w-full rounded-xl py-3 h-auto ${
-                    isFav ? 'border-[#E91E8C] text-[#E91E8C]' : 'border-[#1A1A1A]/10'
+                  className={`mt-2 h-auto w-full rounded-xl py-2 text-sm ${
+                    isFav ? 'border-[#E91E8C] text-[#E91E8C]' : 'border-[#1A1A1A]/10 text-[#1A1A1A]/70'
                   }`}
                 >
                   <Heart
@@ -528,6 +566,47 @@ export default function ProfiloPage() {
                   {isFav ? 'Salvato nei preferiti' : 'Salva nei preferiti'}
                 </Button>
               </div>
+
+              {/* Orari & Tariffe (visibili solo se almeno un valore è presente) */}
+              {(p.orari_tipo || p.orari_altro || p.tariffa_30min != null || p.tariffa_1ora != null) && (
+                <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+                  <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#1A1A1A]/70">
+                    Orari e tariffe
+                  </h2>
+
+                  {(p.orari_tipo || p.orari_altro) && (
+                    <div className="mb-3 flex items-start gap-2">
+                      <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#E91E8C]" />
+                      <p className="text-sm text-[#1A1A1A]/80">
+                        {p.orari_tipo === '24_7' && '24/7'}
+                        {p.orari_tipo === 'h24' && 'H24'}
+                        {p.orari_tipo === 'altro' && p.orari_altro}
+                        {!p.orari_tipo && p.orari_altro}
+                      </p>
+                    </div>
+                  )}
+
+                  {(p.tariffa_30min != null || p.tariffa_1ora != null) && (
+                    <div className="flex items-start gap-2">
+                      <TagIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#E91E8C]" />
+                      <ul className="flex-1 space-y-1 text-sm text-[#1A1A1A]/80">
+                        {p.tariffa_30min != null && (
+                          <li className="flex items-center justify-between">
+                            <span>30 minuti</span>
+                            <span className="font-semibold text-[#1A1A1A]">{p.tariffa_30min} €</span>
+                          </li>
+                        )}
+                        {p.tariffa_1ora != null && (
+                          <li className="flex items-center justify-between">
+                            <span>1 ora</span>
+                            <span className="font-semibold text-[#1A1A1A]">{p.tariffa_1ora} €</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -536,7 +615,7 @@ export default function ProfiloPage() {
       <AuthRequiredModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        message={`Per salvare ${professionista?.nome ?? 'questa professionista'} nei preferiti devi avere un account.`}
+        message={`Per salvare ${profile?.nome ?? 'questa escort'} nei preferiti devi avere un account.`}
       />
     </div>
   );

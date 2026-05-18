@@ -8,7 +8,7 @@ from .models import Preferito
 
 
 class PreferitiListView(generics.ListAPIView):
-    """Returns the authenticated user's favorite professioniste, as cards."""
+    """Returns the authenticated user's favorite escort, as cards."""
     serializer_class = ProfessionistaCardSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
@@ -26,7 +26,7 @@ class PreferitiListView(generics.ListAPIView):
 
 
 class PreferitoToggleView(APIView):
-    """POST: toggle favorite for a given professionista (creates or deletes).
+    """POST: toggle favorite for a given escort profile (creates or deletes).
     Returns { is_favorite: bool, count: int }.
     """
     permission_classes = [permissions.IsAuthenticated]
@@ -34,7 +34,7 @@ class PreferitoToggleView(APIView):
     def post(self, request, prof_id: int):
         prof = Professionista.objects.filter(id=prof_id).first()
         if not prof:
-            return Response({'detail': 'Professionista non trovata'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Escort non trovata'}, status=status.HTTP_404_NOT_FOUND)
         existing = Preferito.objects.filter(user=request.user, professionista=prof).first()
         if existing:
             existing.delete()

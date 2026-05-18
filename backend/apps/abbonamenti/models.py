@@ -91,7 +91,7 @@ class Abbonamento(models.Model):
     def activate(self, payment_method: str = 'stripe', stripe_payment_intent_id: str = '') -> None:
         """Marks the subscription as paid and sets inizio/scadenza.
 
-        If the same professionista already has an active abbonamento of the same tipo,
+        If the same escort profile already has an active abbonamento of the same tipo,
         the new duration is appended on top of the existing scadenza so that pre-renewals
         cumulate.
         """

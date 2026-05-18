@@ -62,22 +62,29 @@ export interface PosizioneTemporanea {
   aggiornato_at: string;
 }
 
-// Professioniste
-export const professionisteApi = {
-  list: (params?: string) => fetchApi(`/professioniste/${params ? `?${params}` : ''}`),
-  featured: () => fetchApi('/professioniste/featured/'),
+export interface Categoria {
+  id: number;
+  nome: string;
+  label: string;
+}
+
+// Escort
+export const escortApi = {
+  categorie: () => fetchApi('/categorie/') as Promise<Categoria[]>,
+  list: (params?: string) => fetchApi(params ? `/escort/?${params}` : '/escort/'),
+  featured: () => fetchApi('/escort/featured/'),
   nearby: (lat?: number, lng?: number) =>
-    fetchApi(`/professioniste/nearby/${lat ? `?lat=${lat}&lng=${lng}` : ''}`),
-  detail: (slug: string) => fetchApi(`/professioniste/${slug}/`),
-  map: () => fetchApi('/professioniste/map/'),
+    fetchApi(`/escort/nearby/${lat ? `?lat=${lat}&lng=${lng}` : ''}`),
+  detail: (slug: string) => fetchApi(`/escort/${slug}/`),
+  map: () => fetchApi('/escort/map/'),
   revealTelefono: (slug: string) =>
-    fetchApi(`/professioniste/${slug}/telefono/`, { method: 'POST' }),
-  register: (formData: FormData) => fetchApiFormData('/professioniste/register/', formData),
-  dashboard: () => fetchApi('/professioniste/dashboard/'),
+    fetchApi(`/escort/${slug}/telefono/`, { method: 'POST' }),
+  register: (formData: FormData) => fetchApiFormData('/escort/register/', formData),
+  dashboard: () => fetchApi('/escort/dashboard/'),
   updateDashboard: (data: FormData) =>
-    fetchApiFormData('/professioniste/dashboard/', data),
+    fetchApiFormData('/escort/dashboard/', data),
   setMiTrovoQui: (indirizzo: string) =>
-    fetchApi('/professioniste/dashboard/mi-trovo-qui/', {
+    fetchApi('/escort/dashboard/mi-trovo-qui/', {
       method: 'POST',
       body: JSON.stringify({ indirizzo }),
     }) as Promise<{
@@ -90,13 +97,57 @@ export const professionisteApi = {
       lng: number;
       aggiornato_at: string;
     }>,
+  setPausa: (in_pausa: boolean) =>
+    fetchApi('/escort/dashboard/pausa/', {
+      method: 'POST',
+      body: JSON.stringify({ in_pausa }),
+    }) as Promise<{
+      in_pausa: boolean;
+      pausa_iniziata_at: string | null;
+      prossima_pausa_disponibile_at: string | null;
+      cooldown_giorni: number;
+    }>,
+  cancellaScheda: async () => {
+    const res = await fetch(`${API_URL}/escort/dashboard/`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok && res.status !== 204) {
+      const err = await res.json().catch(() => ({ detail: 'Errore di rete' }));
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+  },
+  listVideo: () => fetchApi('/escort/dashboard/video/') as Promise<EscortVideo[]>,
+  addVideo: (file: File) => {
+    const fd = new FormData();
+    fd.append('video', file);
+    return fetchApiFormData('/escort/dashboard/video/', fd) as Promise<EscortVideo>;
+  },
+  deleteVideo: async (id: number) => {
+    const res = await fetch(`${API_URL}/escort/dashboard/video/${id}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok && res.status !== 204) {
+      const err = await res.json().catch(() => ({ detail: 'Errore di rete' }));
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+  },
 };
+
+export interface EscortVideo {
+  id: number;
+  video: string;
+  ordine: number;
+}
+
+export const MAX_VIDEO_PER_ESCORT = 5;
 
 // Recensioni
 export const recensioniApi = {
-  list: (slug: string) => fetchApi(`/professioniste/${slug}/recensioni/`),
+  list: (slug: string) => fetchApi(`/escort/${slug}/recensioni/`),
   create: (slug: string, data: { stelle: number; testo: string }) =>
-    fetchApi(`/professioniste/${slug}/recensioni/create/`, {
+    fetchApi(`/escort/${slug}/recensioni/create/`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -196,10 +247,10 @@ export const notificheApi = {
 
 // Sblocchi social
 export const sblocchiApi = {
-  checkout: (professionista_id: number) =>
+  checkout: (escort_id: number) =>
     fetchApi('/sblocchi/checkout/', {
       method: 'POST',
-      body: JSON.stringify({ professionista_id }),
+      body: JSON.stringify({ escort_id }),
     }) as Promise<{
       mock: boolean;
       redirect_url: string | null;

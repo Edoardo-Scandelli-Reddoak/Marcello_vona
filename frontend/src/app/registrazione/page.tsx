@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { professionisteApi, tagsApi } from '@/lib/api';
+import { escortApi, tagsApi, type Categoria } from '@/lib/api';
 
 interface Tag {
   id: number;
@@ -16,7 +16,7 @@ interface Tag {
 
 const steps = [
   'Crea account',
-  'Il tuo profilo',
+  'La tua scheda',
   'Le tue foto',
   'Verifica identità',
   'Conferma',
@@ -37,6 +37,7 @@ export default function RegistrazionePage() {
   // Step 2
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [categorieOpts, setCategorieOpts] = useState<Categoria[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [bio, setBio] = useState('');
@@ -46,8 +47,17 @@ export default function RegistrazionePage() {
   const [via, setVia] = useState('');
   const [cap, setCap] = useState('');
   const [citta, setCitta] = useState('');
+  const [zona, setZona] = useState('');
   const [provincia, setProvincia] = useState('');
   const [nazione, setNazione] = useState('Italia');
+  // Disponibilità (incall / outcall) — opzionale
+  const [disponibilita, setDisponibilita] = useState('');
+  // Orari (preset + testo libero) — opzionale
+  const [orariTipo, setOrariTipo] = useState('');
+  const [orariAltro, setOrariAltro] = useState('');
+  // Tariffe in EUR — opzionali
+  const [tariffa30min, setTariffa30min] = useState('');
+  const [tariffa1ora, setTariffa1ora] = useState('');
   // Social (opzionali)
   const [onlyfansUrl, setOnlyfansUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -58,8 +68,10 @@ export default function RegistrazionePage() {
   // Step 3
   const [fotoProfilo, setFotoProfilo] = useState<File | null>(null);
   const [galleria, setGalleria] = useState<File[]>([]);
+  const [video, setVideo] = useState<File[]>([]);
   const fotoInputRef = useRef<HTMLInputElement>(null);
   const galleriaInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Step 4
   const [dataNascita, setDataNascita] = useState('');
@@ -70,6 +82,7 @@ export default function RegistrazionePage() {
 
   useEffect(() => {
     tagsApi.list().then(setAvailableTags).catch(() => setAvailableTags([]));
+    escortApi.categorie().then(setCategorieOpts).catch(() => setCategorieOpts([]));
   }, []);
 
   const toggleTag = (id: number) => {
@@ -106,7 +119,7 @@ export default function RegistrazionePage() {
     }
     setLoading(true);
     try {
-      await register(email, password, 'professionista');
+      await register(email, password, 'escort');
       setStep(1);
     } catch (err: any) {
       setError(err.message);
@@ -152,7 +165,7 @@ export default function RegistrazionePage() {
       return;
     }
     if (etaCorrente < 18) {
-      setError('Devi essere maggiorenne (18+) per registrarti come professionista.');
+      setError('Devi essere maggiorenne (18+) per registrarti come escort.');
       return;
     }
     if (!docFronte || !docRetro) {
@@ -176,8 +189,15 @@ export default function RegistrazionePage() {
       formData.append('via', via);
       formData.append('cap', cap);
       formData.append('citta', citta);
+      if (zona.trim()) formData.append('zona', zona.trim());
       formData.append('provincia', provincia);
       formData.append('nazione', nazione);
+      // Disponibilità / orari / tariffe (tutti opzionali)
+      if (disponibilita) formData.append('disponibilita', disponibilita);
+      if (orariTipo) formData.append('orari_tipo', orariTipo);
+      if (orariAltro.trim()) formData.append('orari_altro', orariAltro.trim());
+      if (tariffa30min) formData.append('tariffa_30min', tariffa30min);
+      if (tariffa1ora) formData.append('tariffa_1ora', tariffa1ora);
       // Social (opzionali)
       if (onlyfansUrl.trim()) formData.append('onlyfans_url', onlyfansUrl.trim());
       if (instagramUrl.trim()) formData.append('instagram_url', instagramUrl.trim());
@@ -192,8 +212,9 @@ export default function RegistrazionePage() {
       formData.append('termini_accettati', 'true');
       selectedTagIds.forEach((id) => formData.append('tags', String(id)));
       galleria.forEach((f) => formData.append('galleria', f));
+      video.forEach((f) => formData.append('video', f));
 
-      await professionisteApi.register(formData);
+      await escortApi.register(formData);
       setStep(4);
     } catch (err: any) {
       setError(err.message);
@@ -204,7 +225,7 @@ export default function RegistrazionePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
-      <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A] sm:text-3xl">Iscriviti come professionista</h1>
+      <h1 className="mb-2 text-2xl font-bold text-[#1A1A1A] sm:text-3xl">Iscriviti come escort</h1>
 
       {/* Progress */}
       <div className="mb-8 flex gap-1">
@@ -245,7 +266,7 @@ export default function RegistrazionePage() {
         </div>
       )}
 
-      {/* Step 2 — Profile */}
+      {/* Step 2 — Scheda */}
       {step === 1 && (
         <div className="space-y-4">
           <div>
@@ -259,12 +280,18 @@ export default function RegistrazionePage() {
               onChange={(e) => setCategoria(e.target.value)}
               className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
               required
+              disabled={categorieOpts.length === 0}
             >
               <option value="">Seleziona...</option>
-              <option value="1">Massaggi</option>
-              <option value="2">Yoga</option>
-              <option value="3">Relax</option>
+              {categorieOpts.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.label}
+                </option>
+              ))}
             </select>
+            {categorieOpts.length === 0 && (
+              <p className="mt-1 text-xs text-[#1A1A1A]/40">Caricamento categorie...</p>
+            )}
           </div>
           <div>
             <Label>Tag</Label>
@@ -388,6 +415,17 @@ export default function RegistrazionePage() {
                   <Input value={citta} onChange={(e) => setCitta(e.target.value)} required />
                 </div>
               </div>
+              <div>
+                <Label>Zona (opzionale)</Label>
+                <Input
+                  value={zona}
+                  onChange={(e) => setZona(e.target.value)}
+                  placeholder='Es. "Centro", "Navigli", "Stazione Centrale"'
+                />
+                <p className="mt-1 text-xs text-[#1A1A1A]/55">
+                  Mostrata accanto alla città sulla scheda. Lasciala vuota se non vuoi specificarla.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Provincia (sigla) *</Label>
@@ -396,6 +434,82 @@ export default function RegistrazionePage() {
                 <div>
                   <Label>Stato</Label>
                   <Input value={nazione} onChange={(e) => setNazione(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DISPONIBILITÀ */}
+          <div className="rounded-xl border border-[#1A1A1A]/10 bg-white p-4">
+            <h3 className="mb-1 text-sm font-bold text-[#1A1A1A]">Disponibilità (opzionale)</h3>
+            <p className="mb-3 text-xs text-[#1A1A1A]/60">
+              Indica se ricevi al tuo indirizzo, vai dal cliente, o entrambe. Lascia vuoto se non vuoi specificarlo.
+            </p>
+            <select
+              value={disponibilita}
+              onChange={(e) => setDisponibilita(e.target.value)}
+              className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
+            >
+              <option value="">Non specificato</option>
+              <option value="ricevo">Ricevo (incall)</option>
+              <option value="altrui">Altrui (outcall)</option>
+              <option value="entrambe">Ricevo / Altrui</option>
+            </select>
+          </div>
+
+          {/* ORARI E TARIFFE */}
+          <div className="rounded-xl border border-[#1A1A1A]/10 bg-white p-4">
+            <h3 className="mb-1 text-sm font-bold text-[#1A1A1A]">Orari e tariffe (opzionale)</h3>
+            <p className="mb-3 text-xs text-[#1A1A1A]/60">
+              Tutti i campi sono facoltativi: compila solo quelli che vuoi mostrare sulla scheda.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <Label>Orari disponibilità</Label>
+                <select
+                  value={orariTipo}
+                  onChange={(e) => setOrariTipo(e.target.value)}
+                  className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
+                >
+                  <option value="">Non specificato</option>
+                  <option value="24_7">24/7</option>
+                  <option value="h24">H24</option>
+                  <option value="altro">Altro (specifica sotto)</option>
+                </select>
+              </div>
+              {orariTipo === 'altro' && (
+                <div>
+                  <Label>Specifica orari</Label>
+                  <Input
+                    value={orariAltro}
+                    onChange={(e) => setOrariAltro(e.target.value)}
+                    maxLength={200}
+                    placeholder='Es. "Lun-Ven 10-22, Sab su appuntamento"'
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Tariffa 30 minuti (€)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={tariffa30min}
+                    onChange={(e) => setTariffa30min(e.target.value)}
+                    placeholder="Es. 100"
+                  />
+                </div>
+                <div>
+                  <Label>Tariffa 1 ora (€)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={tariffa1ora}
+                    onChange={(e) => setTariffa1ora(e.target.value)}
+                    placeholder="Es. 200"
+                  />
                 </div>
               </div>
             </div>
@@ -441,6 +555,26 @@ export default function RegistrazionePage() {
               <p className="mt-1 text-xs text-[#1A1A1A]/60">{galleria.length} foto selezionate</p>
             )}
           </div>
+          <div>
+            <Label>Video (max 5)</Label>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                setVideo(files);
+              }}
+              className="mt-1 block w-full text-sm"
+            />
+            <p className="mt-1 text-xs text-[#1A1A1A]/55">
+              Opzionale. Puoi caricare fino a 5 video brevi (mp4, mov…).
+            </p>
+            {video.length > 0 && (
+              <p className="mt-1 text-xs text-[#1A1A1A]/60">{video.length} video selezionati</p>
+            )}
+          </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(1)}>Indietro</Button>
             <Button onClick={handleStep3} className="flex-1 bg-[#E91E8C] text-white hover:bg-[#D11A7D]">Continua</Button>
@@ -452,7 +586,7 @@ export default function RegistrazionePage() {
       {step === 3 && (
         <div className="space-y-4">
           <p className="rounded-lg bg-[#E91E8C]/5 p-3 text-sm text-[#1A1A1A]/70">
-            <strong>Verifica età automatica.</strong> La data di nascita che inserisci <em>deve combaciare</em> con quella riportata sul documento d&apos;identità che caricherai qui sotto: <strong>se i due dati non combaciano, il profilo non verrà creato</strong>. Il documento è visibile solo al team di moderazione e non sarà mai reso pubblico.
+            <strong>Verifica età automatica.</strong> La data di nascita che inserisci <em>deve combaciare</em> con quella riportata sul documento d&apos;identità che caricherai qui sotto: <strong>se i due dati non combaciano, la scheda non verrà creata</strong>. Il documento è visibile solo al team di moderazione e non sarà mai reso pubblico.
           </p>
           <div>
             <Label>Data di nascita *</Label>
@@ -515,10 +649,10 @@ export default function RegistrazionePage() {
           <div className="mb-4 text-5xl">✓</div>
           <h2 className="mb-2 text-2xl font-bold text-[#1A1A1A]">Verifica età completata</h2>
           <p className="mb-2 text-[#1A1A1A]/70">
-            Profilo creato correttamente.
+            Scheda creata correttamente.
           </p>
           <p className="mb-6 text-sm text-[#1A1A1A]/60">
-            Per pubblicarlo e renderlo visibile agli utenti, scegli ora un abbonamento.
+            Per pubblicarla e renderla visibile agli utenti, scegli ora un abbonamento.
           </p>
           <Button onClick={() => router.push('/abbonamento')} className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
             Procedi al pagamento

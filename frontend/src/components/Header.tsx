@@ -13,7 +13,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   const navLinks = [
-    { href: '/professioniste', label: 'Le mie professioniste' },
+    { href: '/escort', label: 'Le nostre escort' },
   ];
 
   return (
@@ -21,8 +21,15 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         {/* Logo + Nav together */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logomarcello.svg" alt="Logo" width={64} height={24} className="h-6 w-auto" />
+          <Link href="/" className="flex shrink-0 items-center gap-2">
+            <Image
+              src="/escortbella.svg"
+              alt="Escort Bella"
+              width={280}
+              height={35}
+              className="h-7 w-auto max-w-[min(55vw,260px)] sm:max-w-[300px]"
+              priority
+            />
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
             {navLinks.map((link) => (

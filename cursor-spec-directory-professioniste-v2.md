@@ -1,4 +1,4 @@
-# Cursor Project Spec — Directory Professioniste
+# Cursor Project Spec — Directory Escort
 ## Versione 2 — Struttura pagine e contenuti
 
 ---
@@ -29,7 +29,7 @@ Nessun altro colore. Grigi neutri solo dove necessario per separatori e sfondo s
 
 ---
 
-## Categorie professioniste
+## Categorie escort
 
 Le categorie sono esattamente tre:
 
@@ -43,8 +43,8 @@ Le categorie sono esattamente tre:
 
 ### Header (fisso in cima, presente su tutte le pagine)
 - Logo a sinistra
-- Menu di navigazione centrale: link a "Professioniste", link alla sezione recensioni, altri link utili
-- A destra: pulsante "Iscriviti come professionista" (fucsia, prominente) + eventuale login utente
+- Menu di navigazione centrale: link a "Escort", link alla sezione recensioni, altri link utili
+- A destra: pulsante "Iscriviti come escort" (fucsia, prominente) + eventuale login utente
 
 ---
 
@@ -66,14 +66,14 @@ Barra di ricerca prominente, centrata, con:
 - Filtro **Distanza da me** — slider o select (es. 5 km, 10 km, 25 km, 50 km) — richiede permesso geolocalizzazione browser
 - Pulsante di ricerca
 
-Al submit, porta alla pagina Professioniste con i filtri già applicati.
+Al submit, porta alla pagina Escort con i filtri già applicati.
 
 ---
 
-### Sezione 3 — Professioniste in evidenza (carosello)
+### Sezione 3 — Escort in evidenza (carosello)
 Titolo sezione: es. "Le più apprezzate"
 
-Carosello orizzontale di card professioniste, ordinato per rating.
+Carosello orizzontale di card escort, ordinato per rating.
 
 Ogni card mostra:
 - Foto (verticale, portrait)
@@ -84,7 +84,7 @@ Ogni card mostra:
 - Distanza dall'utente (se geolocalizzazione disponibile)
 - Icona preferiti (cuore)
 
-Click sulla card → apre la pagina profilo della professionista.
+Click sulla card → apre la scheda pubblica dell'escort.
 
 ---
 
@@ -100,7 +100,7 @@ Se l'utente non ha concesso il permesso di geolocalizzazione, mostrare un messag
 ### Sezione 5 — Recensioni sul sito
 Titolo sezione: es. "Cosa dicono di noi"
 
-Sezione con recensioni generali sul sito (non sulle singole professioniste). Carosello o griglia di testimonianze con:
+Sezione con recensioni generali sul sito (non sulle singole escort). Carosello o griglia di testimonianze con:
 - Testo recensione
 - Nome utente
 - Stelle
@@ -111,15 +111,15 @@ Queste recensioni sono gestite dall'admin Django e inserite manualmente.
 
 ### Footer
 - Logo
-- Link principali (Professioniste, Come funziona, Contatti)
+- Link principali (Escort, Come funziona, Contatti)
 - Link legali (Privacy Policy, Termini e condizioni, Cookie)
 - Copyright
 
 ---
 
-## Pagina: Professioniste (`/professioniste`)
+## Pagina: Escort (`/escort`)
 
-Pagina dedicata alla navigazione e ricerca di tutte le professioniste approvate.
+Pagina dedicata alla navigazione e ricerca di tutte le escort approvate.
 
 ---
 
@@ -137,13 +137,13 @@ Pagina dedicata alla navigazione e ricerca di tutte le professioniste approvate.
 
 ### Vista Lista
 
-Griglia di card professioniste (3 colonne desktop, 2 tablet, 1 mobile).
+Griglia di card escort (3 colonne desktop, 2 tablet, 1 mobile).
 
 Ogni card identica a quella del carosello homepage.
 
-In fondo alla pagina: **paginazione** (es. 12 professioniste per pagina).
+In fondo alla pagina: **paginazione** (es. 12 escort per pagina).
 
-Sopra la griglia: contatore risultati (es. "47 professioniste trovate") e ordinamento (Per distanza / Per rating / Più recenti).
+Sopra la griglia: contatore risultati (es. "47 escort trovate") e ordinamento (Per distanza / Per rating / Più recenti).
 
 ---
 
@@ -151,18 +151,18 @@ Sopra la griglia: contatore risultati (es. "47 professioniste trovate") e ordina
 
 Mappa OpenStreetMap a tutta larghezza (o affiancata alla lista su desktop).
 
-Ogni professionista approvata ha un **pin sulla mappa** nella sua posizione.
+Ogni escort approvata ha un **pin sulla mappa** nella sua posizione.
 
 Il colore del pin varia per categoria:
 - Massaggi → pin fucsia
 - Yoga → pin nero
 - Relax → pin bianco con bordo nero
 
-Click su un pin → apre un popup/tooltip con: foto thumbnail, nome, categoria, rating, pulsante "Vedi profilo".
+Click su un pin → apre un popup/tooltip con: foto thumbnail, nome, categoria, rating, pulsante "Vedi scheda".
 
 ---
 
-## Pagina: Profilo professionista (`/professioniste/[slug]`)
+## Pagina: Profilo escort (`/escort/[slug]`)
 
 Layout a due colonne su desktop.
 
@@ -185,9 +185,9 @@ Layout a due colonne su desktop.
 
 ---
 
-## Flusso: Iscrizione professionista
+## Flusso: Iscrizione escort
 
-Accessibile dal pulsante "Iscriviti come professionista" nell'header.
+Accessibile dal pulsante "Iscriviti come escort" nell'header.
 
 Form multi-step con progress indicator visibile:
 
@@ -221,9 +221,9 @@ Form multi-step con progress indicator visibile:
 
 ---
 
-## Area: Dashboard professionista (`/dashboard`)
+## Area: Dashboard escort (`/dashboard`)
 
-Accessibile solo dopo login con account di tipo "professionista".
+Accessibile solo dopo login con account di tipo "escort".
 
 Contenuto:
 - Stato del profilo: badge visibile (In attesa di verifica / Approvato / Rifiutato)
@@ -238,9 +238,9 @@ Contenuto:
 Pannello di amministrazione accessibile solo agli admin del sito.
 
 Funzionalità principali:
-- Lista professioniste con filtro per stato (in attesa / approvate / rifiutate)
+- Lista escort con filtro per stato (in attesa / approvate / rifiutate)
 - Vista dettaglio con documento d'identità visualizzabile inline
-- Azioni: Approva / Rifiuta con invio email automatica alla professionista
+- Azioni: Approva / Rifiuta con invio email automatica all'escort
 - Gestione categorie e tag
 - Gestione banner pubblicitari (per posizione e date)
 - Moderazione recensioni

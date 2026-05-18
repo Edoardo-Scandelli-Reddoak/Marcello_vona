@@ -21,7 +21,7 @@ export default function AuthRequiredModal({
   onClose,
   next,
   title = 'Accedi per continuare',
-  message = 'Per salvare una professionista nei preferiti devi avere un account.',
+  message = 'Per salvare un\'escort nei preferiti devi avere un account.',
 }: AuthRequiredModalProps) {
   useEffect(() => {
     if (!open) return;

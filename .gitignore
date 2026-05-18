@@ -27,3 +27,6 @@ backend/media/
 
 # Docker
 postgres_data/
+
+# Materiale di lavoro locale (immagini di riferimento del cliente, note, ecc.)
+foto_ragazze_vona.jpeg

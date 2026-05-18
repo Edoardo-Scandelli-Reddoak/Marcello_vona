@@ -7,10 +7,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.db import models
+from django.db.models import Case, Count, IntegerField, Value, When
+from .models import (
+    Professionista, Categoria, Tag,
+    VideoProfessionista, MAX_VIDEO_PER_ESCORT,
+    PAUSA_COOLDOWN_DAYS,
+)
 from .geocoding import geocode_address
-from .models import Professionista, Categoria, Tag
-from django.db.models import Count
-
 from .serializers import (
     ProfessionistaCardSerializer,
     ProfessionistaDetailSerializer,
@@ -20,6 +24,7 @@ from .serializers import (
     TagSerializer,
     RevealTelefonoSerializer,
     ProvinciaSerializer,
+    VideoSerializer,
 )
 from .filters import ProfessionistaFilter
 
@@ -181,7 +186,13 @@ class MiTrovoQuiView(APIView):
         })
 
 
-class ProfessionistaDashboardView(generics.RetrieveUpdateAPIView):
+class ProfessionistaDashboardView(generics.RetrieveUpdateDestroyAPIView):
+    """GET/PATCH/PUT/DELETE sulla propria scheda.
+
+    DELETE rimuove definitivamente la scheda (Professionista). L'utente resta,
+    ma viene riportato a `user_type='user'` così può navigare il sito o iscriversi
+    di nuovo in futuro.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
@@ -191,6 +202,110 @@ class ProfessionistaDashboardView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return Professionista.objects.get(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        user = instance.user
+        instance.delete()
+        # Riporta l'account a tipo "user" così l'utente può continuare a usare il sito
+        # come visitatore (o iscriversi di nuovo).
+        if user.user_type == 'escort':
+            user.user_type = 'user'
+            user.save(update_fields=['user_type'])
+
+
+class PausaSchedaView(APIView):
+    """Mette in pausa o riattiva la propria scheda.
+
+    POST { "in_pausa": true } per sospendere; POST { "in_pausa": false } per riattivare.
+    Limite: massimo una pausa ogni PAUSA_COOLDOWN_DAYS giorni. Se è troppo presto per
+    una nuova pausa, restituisce 400 con la data della prossima disponibilità.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        prof = Professionista.objects.filter(user=request.user).first()
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+
+        target = bool(request.data.get('in_pausa'))
+
+        if target and not prof.in_pausa:
+            # Attivazione pausa: controllo cooldown
+            next_at = prof.prossima_pausa_disponibile_at
+            if next_at is not None:
+                return Response(
+                    {
+                        'detail': (
+                            'Hai già usato la pausa di questo mese. '
+                            f'Potrai mettere di nuovo in pausa la scheda dal '
+                            f'{next_at.strftime("%d/%m/%Y")}.'
+                        ),
+                        'prossima_pausa_disponibile_at': next_at,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            prof.in_pausa = True
+            prof.pausa_iniziata_at = timezone.now()
+            prof.save(update_fields=['in_pausa', 'pausa_iniziata_at'])
+        elif not target and prof.in_pausa:
+            # Riattivazione: lasciamo invariato pausa_iniziata_at per il cooldown
+            prof.in_pausa = False
+            prof.save(update_fields=['in_pausa'])
+
+        return Response({
+            'in_pausa': prof.in_pausa,
+            'pausa_iniziata_at': prof.pausa_iniziata_at,
+            'prossima_pausa_disponibile_at': prof.prossima_pausa_disponibile_at,
+            'cooldown_giorni': PAUSA_COOLDOWN_DAYS,
+        })
+
+
+class VideoListCreateView(APIView):
+    """Gestione video dalla dashboard.
+
+    GET  → elenco dei propri video
+    POST → carica un nuovo video (multipart "video"). Rifiuta se sono già MAX_VIDEO_PER_ESCORT.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _profilo(self, request):
+        return Professionista.objects.filter(user=request.user).first()
+
+    def get(self, request):
+        prof = self._profilo(request)
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(VideoSerializer(prof.video.all(), many=True).data)
+
+    def post(self, request):
+        prof = self._profilo(request)
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        if prof.video.count() >= MAX_VIDEO_PER_ESCORT:
+            return Response(
+                {'detail': f'Hai raggiunto il limite di {MAX_VIDEO_PER_ESCORT} video.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        video_file = request.FILES.get('video')
+        if not video_file:
+            return Response({'detail': 'File video mancante.'}, status=status.HTTP_400_BAD_REQUEST)
+        ordine = (prof.video.aggregate(m=models.Max('ordine'))['m'] or -1) + 1
+        v = VideoProfessionista.objects.create(professionista=prof, video=video_file, ordine=ordine)
+        return Response(VideoSerializer(v).data, status=status.HTTP_201_CREATED)
+
+
+class VideoDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        prof = Professionista.objects.filter(user=request.user).first()
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        v = prof.video.filter(pk=pk).first()
+        if not v:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        v.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['POST'])
@@ -205,7 +320,15 @@ def reveal_telefono(request, slug):
 
 
 class CategoriaListView(generics.ListAPIView):
-    queryset = Categoria.objects.all()
+    queryset = Categoria.objects.annotate(
+        _ord=Case(
+            When(nome__in=['donna', 'massaggi'], then=Value(0)),
+            When(nome__in=['trans', 'yoga'], then=Value(1)),
+            When(nome__in=['coppia', 'relax'], then=Value(2)),
+            default=Value(3),
+            output_field=IntegerField(),
+        )
+    ).order_by('_ord')
     serializer_class = CategoriaSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None
@@ -219,7 +342,7 @@ class TagListView(generics.ListAPIView):
 
 
 class ProvinceListView(generics.ListAPIView):
-    """List of provinces with approved professioniste."""
+    """List of provinces with approved escort."""
     serializer_class = ProvinciaSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None
@@ -234,8 +357,8 @@ class ProvinceListView(generics.ListAPIView):
         )
 
 
-class MapProfessionisteView(generics.ListAPIView):
-    """All approved professioniste with coordinates for map markers."""
+class MapEscortView(generics.ListAPIView):
+    """All approved escort with coordinates for map markers."""
     serializer_class = ProfessionistaCardSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None

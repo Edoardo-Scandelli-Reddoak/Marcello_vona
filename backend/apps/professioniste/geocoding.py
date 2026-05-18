@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 logger = logging.getLogger(__name__)
 
 NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
-USER_AGENT = 'DirectoryProfessioniste/1.0 (admin@directoryprofessioniste.it)'
+USER_AGENT = 'DirectoryEscort/1.0 (admin@directoryescort.it)'
 REQUEST_TIMEOUT_SEC = 6
 
 

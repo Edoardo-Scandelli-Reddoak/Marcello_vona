@@ -21,19 +21,19 @@ def _stripe_enabled() -> bool:
 
 
 class SbloccoCheckoutView(APIView):
-    """POST { professionista_id } -> avvia checkout Stripe per sbloccare i social
-    di quella professionista. In modalità mock attiva immediatamente lo sblocco.
+    """POST { escort_id } -> avvia checkout Stripe per sbloccare i social
+    di quella escort. In modalità mock attiva immediatamente lo sblocco.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        prof_id = request.data.get('professionista_id')
+        prof_id = request.data.get('escort_id') or request.data.get('professionista_id')
         if not prof_id:
-            return Response({'detail': 'professionista_id richiesto'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'escort_id richiesto'}, status=status.HTTP_400_BAD_REQUEST)
 
         prof = Professionista.objects.filter(id=prof_id).first()
         if not prof:
-            return Response({'detail': 'Professionista non trovata'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Escort non trovata'}, status=status.HTTP_404_NOT_FOUND)
 
         # Se già sbloccato, non serve ricreare
         existing_active = SbloccoSocial.objects.filter(
@@ -63,7 +63,7 @@ class SbloccoCheckoutView(APIView):
             sblocco.save(update_fields=['attivo', 'payment_method', 'paid_at'])
             return Response({
                 'mock': True,
-                'redirect_url': f'{frontend_url}/professioniste/{prof.slug}?social_unlocked=1',
+                'redirect_url': f'{frontend_url}/escort/{prof.slug}?social_unlocked=1',
                 'sblocco_id': sblocco.id,
             })
 
@@ -77,14 +77,14 @@ class SbloccoCheckoutView(APIView):
                         'currency': 'eur',
                         'product_data': {
                             'name': f'Sblocco social — {prof.nome}',
-                            'description': 'Accesso permanente ai canali social del profilo',
+                            'description': 'Accesso permanente ai canali social della scheda',
                         },
                         'unit_amount': SBLOCCO_SOCIAL_PRICE_CENTS,
                     },
                     'quantity': 1,
                 }],
-                success_url=f'{frontend_url}/professioniste/{prof.slug}?social_unlocked=1&session_id={{CHECKOUT_SESSION_ID}}',
-                cancel_url=f'{frontend_url}/professioniste/{prof.slug}?social_cancelled=1',
+                success_url=f'{frontend_url}/escort/{prof.slug}?social_unlocked=1&session_id={{CHECKOUT_SESSION_ID}}',
+                cancel_url=f'{frontend_url}/escort/{prof.slug}?social_cancelled=1',
                 metadata={'sblocco_id': str(sblocco.id), 'kind': 'sblocco_social'},
                 customer_email=request.user.email or None,
             )

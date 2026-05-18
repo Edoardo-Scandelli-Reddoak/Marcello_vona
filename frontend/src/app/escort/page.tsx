@@ -6,13 +6,13 @@ import dynamic from 'next/dynamic';
 import { Search, List, Map, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import ProfessionistaCard from '@/components/ProfessionistaCard';
-import { professionisteApi, provinceApi } from '@/lib/api';
+import EscortCard from '@/components/EscortCard';
+import { escortApi, provinceApi } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
-export default function ProfessionistePage() {
+export default function EscortPage() {
   const searchParams = useSearchParams();
   const geo = useGeolocation();
 
@@ -51,7 +51,7 @@ export default function ProfessionistePage() {
       }
       params.set('page', String(p));
 
-      const data = await professionisteApi.list(params.toString());
+      const data = await escortApi.list(params.toString());
       setResults(data.results || data);
       setTotalCount(data.count || (data.results ? data.results.length : data.length));
     } catch {
@@ -71,7 +71,7 @@ export default function ProfessionistePage() {
 
   useEffect(() => {
     if (view === 'map') {
-      professionisteApi.map().then(setMapMarkers).catch(() => {});
+      escortApi.map().then(setMapMarkers).catch(() => {});
     }
   }, [view]);
 
@@ -96,7 +96,7 @@ export default function ProfessionistePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       {/* Header */}
-      <h1 className="mb-4 text-2xl font-bold text-[#1A1A1A] sm:mb-6 sm:text-3xl">Professioniste</h1>
+      <h1 className="mb-4 text-2xl font-bold text-[#1A1A1A] sm:mb-6 sm:text-3xl">Escort</h1>
 
       {/* Search & Filters */}
       <form onSubmit={handleSearch} className="mb-6 space-y-3">
@@ -116,9 +116,9 @@ export default function ProfessionistePage() {
             className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
           >
             <option value="">Categoria</option>
-            <option value="massaggi">Massaggi</option>
-            <option value="yoga">Yoga</option>
-            <option value="relax">Relax</option>
+            <option value="donna">Donna</option>
+            <option value="trans">Trans</option>
+            <option value="coppia">Coppia</option>
           </select>
           <select
             value={distanza}
@@ -205,11 +205,11 @@ export default function ProfessionistePage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {results.map((p) => (
-              <ProfessionistaCard key={p.id} professionista={p} userLat={geo.lat} userLng={geo.lng} />
+              <EscortCard key={p.id} escort={p} />
             ))}
           </div>
           {results.length === 0 && (
-            <p className="py-20 text-center text-[#1A1A1A]/40">Nessuna professionista trovata.</p>
+            <p className="py-20 text-center text-[#1A1A1A]/40">Nessuna escort trovata.</p>
           )}
           {/* Pagination */}
           {totalPages > 1 && (

@@ -8,55 +8,59 @@ import { mediaUrl, preferitiApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
 
-interface ProfessionistaCardProps {
-  professionista: {
-    id: number;
-    nome: string;
-    slug: string;
-    foto_profilo: string;
-    categoria_nome: string;
-    categoria_slug: string;
-    citta: string;
-    provincia?: string;
-    latitudine: number | null;
-    longitudine: number | null;
-    rating: number;
-    numero_recensioni: number;
-    stato?: string;
-  };
-  userLat?: number | null;
-  userLng?: number | null;
+export interface EscortCardData {
+  id: number;
+  nome: string;
+  slug: string;
+  foto_profilo: string;
+  categoria_nome: string;
+  categoria_slug: string;
+  citta: string;
+  zona?: string;
+  disponibilita?: '' | 'ricevo' | 'altrui' | 'entrambe';
+  provincia?: string;
+  latitudine: number | null;
+  longitudine: number | null;
+  rating: number;
+  numero_recensioni: number;
+  stato?: string;
 }
 
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+interface EscortCardProps {
+  escort: EscortCardData;
 }
 
 const categoriaStyle: Record<string, { bg: string; text: string }> = {
-  massaggi: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
-  yoga: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
-  relax: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  donna: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
+  trans: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
+  coppia: { bg: 'bg-amber-50', text: 'text-amber-700' },
 };
 
-export default function ProfessionistaCard({ professionista, userLat, userLng }: ProfessionistaCardProps) {
-  const p = professionista;
+/** Slug legacy (pre-migrazione) ancora nei JSON in cache → stesso stile delle categorie nuove */
+const LEGACY_SLUG_MAP: Record<string, keyof typeof categoriaStyle> = {
+  massaggi: 'donna',
+  yoga: 'trans',
+  relax: 'coppia',
+};
+
+const LABEL_LEGACY: Record<string, string> = {
+  Massaggi: 'Donna',
+  Yoga: 'Trans',
+  Relax: 'Coppia',
+  massaggi: 'Donna',
+  yoga: 'Trans',
+  relax: 'Coppia',
+};
+
+export default function EscortCard({ escort }: EscortCardProps) {
+  const p = escort;
   const { user } = useAuth();
-  const [isFav, setIsFav] = useState<boolean>(Boolean((p as any).is_favorite));
+  const [isFav, setIsFav] = useState<boolean>(Boolean((p as EscortCardData & { is_favorite?: boolean }).is_favorite));
   const [favLoading, setFavLoading] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const distance =
-    userLat && userLng && p.latitudine && p.longitudine
-      ? haversine(userLat, userLng, p.latitudine, p.longitudine)
-      : null;
-  const style = categoriaStyle[p.categoria_slug] || categoriaStyle.massaggi;
+  const slugKey = LEGACY_SLUG_MAP[p.categoria_slug] ?? p.categoria_slug;
+  const style = categoriaStyle[slugKey] || categoriaStyle.donna;
+  const categoriaBadge = LABEL_LEGACY[p.categoria_nome] ?? LABEL_LEGACY[p.categoria_slug] ?? p.categoria_nome;
 
   const handleFav = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -79,9 +83,8 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
 
   return (
     <>
-    <Link href={`/professioniste/${p.slug}`} className="group block">
+    <Link href={`/escort/${p.slug}`} className="group block">
       <div className="overflow-hidden rounded-2xl bg-white border border-[#1A1A1A]/[0.06] transform-gpu will-change-transform [backface-visibility:hidden] transition-[transform,box-shadow] duration-300 ease-out hover:shadow-xl hover:shadow-[#E91E8C]/[0.06] hover:-translate-y-1">
-        {/* Image with overlay gradient */}
         <div className="relative aspect-[3/4] overflow-hidden">
           <Image
             src={mediaUrl(p.foto_profilo)}
@@ -90,10 +93,8 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
             className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
           />
-          {/* Gradient overlay at bottom */}
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-          {/* Favorite button */}
           <button
             className="absolute right-3 top-3 rounded-full bg-white/80 p-2 backdrop-blur-sm transform-gpu transition-[transform,background-color] duration-200 ease-out hover:bg-white hover:scale-110 disabled:opacity-50"
             onClick={handleFav}
@@ -107,33 +108,39 @@ export default function ProfessionistaCard({ professionista, userLat, userLng }:
             />
           </button>
 
-          {/* Category badge on image */}
           <div className="absolute left-3 top-3">
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase backdrop-blur-sm ${style.bg} ${style.text}`}>
-              {p.categoria_nome}
+              {categoriaBadge}
             </span>
           </div>
 
-          {/* Top: name. Bottom row: status (left) + city (right) — same level */}
           <div className="absolute inset-x-0 bottom-0 p-4">
             <h3 className="text-lg font-bold leading-tight text-white drop-shadow-sm">
               {p.nome}
             </h3>
-            <div className="mt-1 flex items-center justify-between gap-2">
-              <p className="line-clamp-1 text-xs font-medium text-white/85 drop-shadow-sm">
-                {p.stato || ' '}
+            {/* Città — Zona */}
+            {p.citta && (
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-white/90 drop-shadow-sm">
+                <MapPin className="h-3 w-3" aria-hidden="true" />
+                {p.citta}{p.zona ? ` — ${p.zona}` : ''}
               </p>
-              {p.citta && (
-                <span className="inline-flex flex-shrink-0 items-center gap-1 text-xs text-white/85 drop-shadow-sm">
-                  <MapPin className="h-3 w-3" aria-hidden="true" />
-                  {p.citta}
-                </span>
-              )}
-            </div>
+            )}
+            {/* Ricevo / Altrui */}
+            {p.disponibilita && (
+              <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-white/85 drop-shadow-sm">
+                {p.disponibilita === 'ricevo' && 'Ricevo'}
+                {p.disponibilita === 'altrui' && 'Altrui'}
+                {p.disponibilita === 'entrambe' && 'Ricevo / Altrui'}
+              </p>
+            )}
+            {p.stato && (
+              <p className="mt-1 line-clamp-1 text-xs font-medium text-white/80 drop-shadow-sm">
+                {p.stato}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Rating bar */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (

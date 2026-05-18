@@ -68,7 +68,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgres://postgres:postgres@db:5432/directory_professioniste'
+        default='postgres://postgres:postgres@db:5432/directory_escort'
     )
 }
 
@@ -135,11 +135,11 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001')
 # In produzione settare EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
 # + EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_PORT, EMAIL_USE_TLS.
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@directoryprofessioniste.it')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@directoryescort.it')
 
 # Unfold Admin
 UNFOLD = {
-    "SITE_TITLE": "Directory Professioniste",
-    "SITE_HEADER": "Directory Professioniste",
+    "SITE_TITLE": "Directory Escort",
+    "SITE_HEADER": "Directory Escort",
     "SITE_SYMBOL": "spa",
 }

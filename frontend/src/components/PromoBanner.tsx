@@ -15,10 +15,10 @@ const DEFAULT_FALLBACK: Banner = {
   posizione: '',
   titolo: 'Vuoi pubblicizzarti in questo banner?',
   descrizione:
-    'Raggiungi migliaia di utenti che ogni giorno cercano professioniste sulla nostra piattaforma. Contattaci per scoprire le opportunità pubblicitarie disponibili.',
+    'Raggiungi migliaia di utenti che ogni giorno cercano escort sulla nostra piattaforma. Contattaci per scoprire le opportunità pubblicitarie disponibili.',
   immagine: null,
   button_testo: 'Contattaci',
-  button_link: 'mailto:supporto@directoryprofessioniste.it',
+  button_link: 'mailto:supporto@directoryescort.it',
 };
 
 export default function PromoBanner({ posizione, fallback }: PromoBannerProps) {

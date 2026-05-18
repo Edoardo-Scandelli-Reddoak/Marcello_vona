@@ -8,12 +8,12 @@ def seed_default(apps, schema_editor):
         defaults={
             'titolo': 'Vuoi pubblicizzarti in questo banner?',
             'descrizione': (
-                'Raggiungi migliaia di utenti che ogni giorno cercano professioniste '
+                'Raggiungi migliaia di utenti che ogni giorno cercano escort '
                 'sulla nostra piattaforma. Contattaci per scoprire le opportunità '
                 'pubblicitarie disponibili.'
             ),
             'button_testo': 'Contattaci',
-            'button_link': 'mailto:supporto@directoryprofessioniste.it',
+            'button_link': 'mailto:supporto@directoryescort.it',
             'attivo': True,
             'ordine': 0,
         },

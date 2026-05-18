@@ -17,16 +17,20 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError({'password_confirm': 'Le password non corrispondono.'})
+        ut = attrs.get('user_type', 'user')
+        if ut == 'professionista':
+            attrs['user_type'] = 'escort'
         return attrs
 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         first_name = validated_data.pop('first_name', '') or ''
+        user_type = validated_data.get('user_type', 'user')
         user = User.objects.create_user(
             username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
-            user_type=validated_data.get('user_type', 'user'),
+            user_type=user_type,
             first_name=first_name.strip(),
         )
         return user

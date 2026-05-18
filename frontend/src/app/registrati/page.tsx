@@ -21,10 +21,10 @@ export default function RegistratiPage() {
           </div>
           <h2 className="text-xl font-bold text-[#1A1A1A]">Sono un utente</h2>
           <p className="mt-2 text-sm text-[#1A1A1A]/65">
-            Cerco professioniste, voglio salvare i preferiti e lasciare recensioni.
+            Cerco escort, voglio salvare i preferiti e lasciare recensioni.
           </p>
           <ul className="mt-4 flex-1 space-y-1 text-sm text-[#1A1A1A]/70">
-            <li>• Salva le professioniste nei preferiti</li>
+            <li>• Salva le escort nei preferiti</li>
             <li>• Lascia recensioni</li>
             <li>• Identità riservata: usi solo un nome di visualizzazione</li>
           </ul>
@@ -40,17 +40,17 @@ export default function RegistratiPage() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#E91E8C]/10">
             <Sparkles className="h-6 w-6 text-[#E91E8C]" />
           </div>
-          <h2 className="text-xl font-bold text-[#1A1A1A]">Sono una professionista</h2>
+          <h2 className="text-xl font-bold text-[#1A1A1A]">Sono un&apos;escort</h2>
           <p className="mt-2 text-sm text-[#1A1A1A]/65">
-            Voglio creare il mio profilo per essere trovata da nuove clienti.
+            Voglio creare la mia scheda per essere trovata da nuove clienti.
           </p>
           <ul className="mt-4 flex-1 space-y-1 text-sm text-[#1A1A1A]/70">
-            <li>• Profilo completo con foto e bio</li>
+            <li>• Scheda completa con foto e bio</li>
             <li>• Verifica età automatica</li>
             <li>• Visibile sulla mappa con abbonamento attivo</li>
           </ul>
           <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#E91E8C] transition-transform duration-200 ease-out group-hover:translate-x-1">
-            Continua come professionista <ArrowRight className="h-4 w-4" />
+            Continua come escort <ArrowRight className="h-4 w-4" />
           </span>
         </Link>
       </div>

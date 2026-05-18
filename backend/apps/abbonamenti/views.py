@@ -50,7 +50,7 @@ class CheckoutCreateView(APIView):
         prof = Professionista.objects.filter(user=request.user).first()
         if not prof:
             return Response(
-                {'detail': 'Devi prima creare il profilo professionista.'},
+                {'detail': 'Devi prima creare la tua scheda escort.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -163,7 +163,7 @@ class CheckSessionView(APIView):
 
 
 class DiscountInfoView(APIView):
-    """Tells the client whether the authenticated professionista qualifies for the
+    """Tells the client whether the authenticated escort qualifies for the
     Early Bird 50% discount (first 10 registered).
 
     Returns a non-eligible payload for unauthenticated users or non-professionisti.

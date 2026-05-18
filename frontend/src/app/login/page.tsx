@@ -36,7 +36,10 @@ export default function LoginPage() {
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <h1 className="mb-2 text-3xl font-bold text-[#1A1A1A]">Accedi</h1>
-        <p className="mb-8 text-[#1A1A1A]/60">
+        <p className="mb-2 text-[#1A1A1A]/60">
+          Entra con le tue credenziali (account escort o utente).
+        </p>
+        <p className="mb-8 text-sm text-[#1A1A1A]/55">
           Non hai un account?{' '}
           <Link href="/registrati" className="text-[#E91E8C] hover:underline">
             Registrati

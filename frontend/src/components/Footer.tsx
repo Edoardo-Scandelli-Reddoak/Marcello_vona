@@ -10,10 +10,16 @@ export default function Footer() {
           {/* Logo */}
           <div>
             <Link href="/" className="inline-block">
-              <Image src="/logomarcello.svg" alt="Logo" width={64} height={24} className="h-6 w-auto brightness-0 invert" />
+              <Image
+                src="/escortbella.svg"
+                alt="Escort Bella"
+                width={280}
+                height={35}
+                className="h-7 w-auto max-w-[260px] brightness-0 invert"
+              />
             </Link>
             <p className="mt-3 text-sm text-white/60">
-              Trova le migliori professioniste di Massaggi, Yoga e Relax vicino a te.
+              Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!
             </p>
             <div className="mt-4 flex items-center gap-2">
               <a
@@ -50,7 +56,7 @@ export default function Footer() {
           <div>
             <h3 className="mb-3 font-semibold text-white">Link utili</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/professioniste" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Professioniste</Link></li>
+              <li><Link href="/escort" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Escort</Link></li>
               <li><Link href="/#come-funziona" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Come funziona</Link></li>
               <li><Link href="/registrazione" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Iscriviti</Link></li>
             </ul>
@@ -72,11 +78,11 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a
-                  href="mailto:supporto@directoryprofessioniste.it"
+                  href="mailto:supporto@directoryescort.it"
                   className="inline-flex items-center gap-2 transition-colors duration-200 ease-out hover:text-[#E91E8C]"
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
-                  supporto@directoryprofessioniste.it
+                  supporto@directoryescort.it
                 </a>
               </li>
               <li>
@@ -93,7 +99,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 border-t border-white/10 pt-8 text-center text-sm text-white/40">
-          &copy; {new Date().getFullYear()} Directory Professioniste. Tutti i diritti riservati.
+          &copy; {new Date().getFullYear()} Directory Escort. Tutti i diritti riservati.
         </div>
       </div>
     </footer>

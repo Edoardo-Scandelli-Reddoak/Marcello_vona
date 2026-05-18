@@ -7,10 +7,10 @@ SBLOCCO_SOCIAL_PRICE_CENTS = 190
 
 
 class SbloccoSocial(models.Model):
-    """Pagamento one-shot di un utente per sbloccare i link social di una professionista.
+    """Pagamento one-shot di un utente per sbloccare i link social di un'escort.
 
     Una volta `attivo=True` (post-conferma pagamento) l'utente vede i bottoni social
-    di quella specifica professionista in modo permanente.
+    di quell'escort in modo permanente.
     """
     PAYMENT_METHOD_CHOICES = (
         ('stripe', 'Stripe'),
@@ -51,10 +51,10 @@ class SbloccoSocial(models.Model):
         return self.importo_centesimi / 100.0
 
 
-def user_has_unlocked_socials(user, professionista) -> bool:
-    """Helper rapido — usato dal serializer del Detail Professionista."""
+def user_has_unlocked_socials(user, escort_profile) -> bool:
+    """Helper rapido — usato dal serializer del dettaglio scheda escort."""
     if not user or not user.is_authenticated:
         return False
     return SbloccoSocial.objects.filter(
-        user=user, professionista=professionista, attivo=True
+        user=user, professionista=escort_profile, attivo=True
     ).exists()

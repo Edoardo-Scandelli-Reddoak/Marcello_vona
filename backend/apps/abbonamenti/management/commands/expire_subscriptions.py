@@ -1,4 +1,4 @@
-"""Marca gli abbonamenti scaduti e crea le notifiche per le professioniste.
+"""Marca gli abbonamenti scaduti e crea le notifiche per le escort.
 
 Uso (manuale):
     docker exec marcellovona-backend-1 python manage.py expire_subscriptions
@@ -17,7 +17,7 @@ from apps.notifiche.models import Notifica
 
 
 class Command(BaseCommand):
-    help = "Marca come 'scaduto' gli abbonamenti con scadenza nel passato e notifica le professioniste."
+    help = "Marca come 'scaduto' gli abbonamenti con scadenza nel passato e notifica le escort."
 
     def handle(self, *args, **options):
         now = timezone.now()
@@ -31,7 +31,7 @@ class Command(BaseCommand):
             self.stdout.write('Nessun abbonamento scaduto da processare.')
             return
 
-        notificati = set()  # un'unica notifica per professionista per giro
+        notificati = set()  # un'unica notifica per escort (profilo) per giro
 
         for abb in expired:
             abb.stato = 'scaduto'
@@ -85,7 +85,7 @@ class Command(BaseCommand):
                         f"Ciao {prof.nome},\n\n"
                         f"{messaggio}\n\n"
                         f"Rinnova ora: {frontend_url}/abbonamento\n\n"
-                        f"— Directory Professioniste"
+                        f"— Directory Escort"
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],

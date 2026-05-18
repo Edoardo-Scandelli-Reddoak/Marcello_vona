@@ -6,11 +6,11 @@ import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import ProfessionistaCard from '@/components/ProfessionistaCard';
+import EscortCard from '@/components/EscortCard';
 import Carousel from '@/components/Carousel';
 import StarRating from '@/components/StarRating';
 import PromoBanner from '@/components/PromoBanner';
-import { professionisteApi, recensioniApi } from '@/lib/api';
+import { escortApi, recensioniApi } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function HomePage() {
@@ -24,15 +24,15 @@ export default function HomePage() {
   const [siteReviews, setSiteReviews] = useState<any[]>([]);
 
   useEffect(() => {
-    professionisteApi.featured().then(setFeatured).catch(() => {});
+    escortApi.featured().then(setFeatured).catch(() => {});
     recensioniApi.sito().then(setSiteReviews).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (geo.lat && geo.lng) {
-      professionisteApi.nearby(geo.lat, geo.lng).then(setNearby).catch(() => {});
+      escortApi.nearby(geo.lat, geo.lng).then(setNearby).catch(() => {});
     } else if (!geo.loading) {
-      professionisteApi.nearby().then(setNearby).catch(() => {});
+      escortApi.nearby().then(setNearby).catch(() => {});
     }
   }, [geo.lat, geo.lng, geo.loading]);
 
@@ -46,7 +46,7 @@ export default function HomePage() {
       params.set('lat', String(geo.lat));
       params.set('lng', String(geo.lng));
     }
-    router.push(`/professioniste?${params.toString()}`);
+    router.push(`/escort?${params.toString()}`);
   };
 
   return (
@@ -56,10 +56,10 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/20 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 text-left">
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Le migliori <span className="text-[#E91E8C]">ragazze</span><br />a 5 stelle
+            Le migliori <span className="text-[#E91E8C]">escort</span><br />a 5 stelle
           </h1>
           <p className="mt-3 max-w-2xl text-base text-white/70 sm:mt-4 sm:text-lg">
-            Scopri le migliori professioniste di Massaggi, Yoga e Relax vicino a te. Sfoglia i profili, leggi le recensioni e trova la persona giusta per il tuo benessere in pochi click.
+            Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!
           </p>
         </div>
       </section>
@@ -86,9 +86,9 @@ export default function HomePage() {
               className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
             >
               <option value="">Tutte le categorie</option>
-              <option value="massaggi">Massaggi</option>
-              <option value="yoga">Yoga</option>
-              <option value="relax">Relax</option>
+              <option value="donna">Donna</option>
+              <option value="trans">Trans</option>
+              <option value="coppia">Coppia</option>
             </select>
             <select
               value={distanza}
@@ -107,16 +107,16 @@ export default function HomePage() {
           </Button>
         </form>
 
-        {/* CTA — registrazione professionista */}
+        {/* CTA — registrazione escort */}
         <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E91E8C]/25 bg-gradient-to-r from-[#E91E8C]/[0.06] to-transparent px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
               <Sparkles className="h-5 w-5 text-[#E91E8C]" />
             </div>
             <div>
-              <p className="font-semibold text-[#1A1A1A]">Sei una professionista?</p>
+              <p className="font-semibold text-[#1A1A1A]">Sei un&apos;escort?</p>
               <p className="text-sm text-[#1A1A1A]/65">
-                Crea il tuo profilo in meno di 3 minuti e fatti trovare da nuovi clienti.
+                Crea la tua scheda in meno di 3 minuti e fatti trovare da nuovi clienti.
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function HomePage() {
           <Carousel>
             {featured.map((p) => (
               <div key={p.id} className="w-[260px] xl:w-[330px] flex-shrink-0">
-                <ProfessionistaCard professionista={p} userLat={geo.lat} userLng={geo.lng} />
+                <EscortCard escort={p} />
               </div>
             ))}
           </Carousel>
@@ -153,19 +153,19 @@ export default function HomePage() {
         <h2 className="mb-6 text-xl font-bold text-[#1A1A1A] sm:mb-8 sm:text-2xl">Vicino a te</h2>
         {!geo.lat && !geo.loading && (
           <p className="mb-6 rounded-lg bg-[#E91E8C]/5 p-4 text-sm text-[#1A1A1A]/60">
-            Attiva la geolocalizzazione per vedere le professioniste più vicine a te.
+            Attiva la geolocalizzazione per vedere le escort più vicine a te.
           </p>
         )}
         {nearby.length > 0 ? (
           <Carousel>
             {nearby.map((p) => (
               <div key={p.id} className="w-[260px] flex-shrink-0">
-                <ProfessionistaCard professionista={p} userLat={geo.lat} userLng={geo.lng} />
+                <EscortCard escort={p} />
               </div>
             ))}
           </Carousel>
         ) : (
-          !geo.loading && <p className="text-[#1A1A1A]/40">Nessuna professionista trovata.</p>
+          !geo.loading && <p className="text-[#1A1A1A]/40">Nessuna escort trovata.</p>
         )}
       </section>
 

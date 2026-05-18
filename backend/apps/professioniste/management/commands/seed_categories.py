@@ -6,7 +6,7 @@ class Command(BaseCommand):
     help = 'Seed delle categorie iniziali'
 
     def handle(self, *args, **options):
-        categories = ['massaggi', 'yoga', 'relax']
+        categories = ['donna', 'trans', 'coppia']
         for cat in categories:
             Categoria.objects.get_or_create(nome=cat)
             self.stdout.write(self.style.SUCCESS(f'Categoria "{cat}" creata/esistente'))

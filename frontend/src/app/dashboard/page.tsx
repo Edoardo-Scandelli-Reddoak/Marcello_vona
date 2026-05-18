@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
-import { professionisteApi, recensioniApi, abbonamentiApi, notificheApi, mediaUrl, type Abbonamento, type Notifica } from '@/lib/api';
+import { escortApi, recensioniApi, abbonamentiApi, notificheApi, mediaUrl, MAX_VIDEO_PER_ESCORT, type Abbonamento, type Notifica, type EscortVideo } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X } from 'lucide-react';
+import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   in_attesa: { label: 'In attesa di verifica', className: 'bg-yellow-100 text-yellow-800' },
@@ -34,12 +34,31 @@ export default function DashboardPage() {
     stato: '',
     telefono: '',
     citta: '',
+    zona: '',
+    disponibilita: '',
+    orari_tipo: '',
+    orari_altro: '',
+    tariffa_30min: '',
+    tariffa_1ora: '',
     onlyfans_url: '',
     instagram_url: '',
     facebook_url: '',
     tiktok_url: '',
     telegram_url: '',
   });
+
+  // Video
+  const [videoList, setVideoList] = useState<EscortVideo[]>([]);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoError, setVideoError] = useState('');
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Pausa & cancellazione
+  const [pausaLoading, setPausaLoading] = useState(false);
+  const [pausaError, setPausaError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Mi trovo qui
   const [miTrovoIndirizzo, setMiTrovoIndirizzo] = useState('');
@@ -51,13 +70,13 @@ export default function DashboardPage() {
       router.push('/login');
       return;
     }
-    if (!authLoading && user?.user_type !== 'professionista') {
+    if (!authLoading && user?.user_type !== 'escort') {
       router.replace('/dashboard/utente');
       return;
     }
     if (user) {
       Promise.all([
-        professionisteApi.dashboard().catch(() => null),
+        escortApi.dashboard().catch(() => null),
         abbonamentiApi.miei().catch(() => [] as Abbonamento[]),
         notificheApi.list().catch(() => [] as Notifica[]),
       ])
@@ -70,12 +89,19 @@ export default function DashboardPage() {
               stato: data.stato || '',
               telefono: data.telefono || '',
               citta: data.citta,
+              zona: data.zona || '',
+              disponibilita: data.disponibilita || '',
+              orari_tipo: data.orari_tipo || '',
+              orari_altro: data.orari_altro || '',
+              tariffa_30min: data.tariffa_30min != null ? String(data.tariffa_30min) : '',
+              tariffa_1ora: data.tariffa_1ora != null ? String(data.tariffa_1ora) : '',
               onlyfans_url: data.onlyfans_url || '',
               instagram_url: data.instagram_url || '',
               facebook_url: data.facebook_url || '',
               tiktok_url: data.tiktok_url || '',
               telegram_url: data.telegram_url || '',
             });
+            setVideoList(Array.isArray(data.video) ? data.video : []);
             if (data.slug) {
               recensioniApi.list(data.slug).then(setRecensioni).catch(() => {});
             }
@@ -92,7 +118,7 @@ export default function DashboardPage() {
   }
 
   if (!profilo) {
-    return <div className="py-20 text-center text-[#1A1A1A]/40">Profilo non trovato.</div>;
+    return <div className="py-20 text-center text-[#1A1A1A]/40">Scheda non trovata.</div>;
   }
 
   const status = statusBadge[profilo.stato] || statusBadge.in_attesa;
@@ -104,7 +130,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-[#1A1A1A] sm:text-3xl">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#1A1A1A] sm:text-3xl">Scheda personale</h1>
         <Badge className={status.className}>{status.label}</Badge>
       </div>
 
@@ -156,14 +182,49 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Banner pausa attiva */}
+      {profilo.in_pausa && (
+        <div className="mb-6 flex flex-wrap items-start gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 sm:flex-nowrap">
+          <Pause className="h-6 w-6 flex-shrink-0 text-amber-700" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-amber-900">Scheda in pausa</h3>
+            <p className="mt-1 text-sm text-amber-800">
+              La tua scheda è nascosta dalle ricerche e dalla mappa. Puoi riattivarla in qualsiasi momento.
+            </p>
+            {pausaError && (
+              <p className="mt-2 text-sm text-red-600">{pausaError}</p>
+            )}
+          </div>
+          <Button
+            disabled={pausaLoading}
+            onClick={async () => {
+              setPausaError('');
+              setPausaLoading(true);
+              try {
+                await escortApi.setPausa(false);
+                const refreshed = await escortApi.dashboard();
+                setProfilo(refreshed);
+              } catch (e: any) {
+                setPausaError(e.message || 'Errore.');
+              } finally {
+                setPausaLoading(false);
+              }
+            }}
+            className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D] sm:w-auto"
+          >
+            {pausaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (<><Play className="mr-2 h-4 w-4" /> Riattiva scheda</>)}
+          </Button>
+        </div>
+      )}
+
       {/* Subscription banner */}
       {!profiloVisibile ? (
         <div className="mb-6 flex flex-wrap items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:flex-nowrap">
           <AlertCircle className="h-6 w-6 flex-shrink-0 text-amber-600" />
           <div className="flex-1">
-            <h3 className="font-semibold text-amber-900">Profilo non ancora pubblicato</h3>
+            <h3 className="font-semibold text-amber-900">Scheda non ancora pubblicata</h3>
             <p className="mt-1 text-sm text-amber-800">
-              Per rendere il tuo profilo visibile agli utenti, acquista un abbonamento.
+              Per rendere la tua scheda visibile agli utenti, acquista un abbonamento.
             </p>
           </div>
           <Button
@@ -214,7 +275,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Profile Card */}
+      {/* Scheda personale */}
       <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
         <div className="flex items-start gap-4 sm:gap-6">
           <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full sm:h-20 sm:w-20">
@@ -256,6 +317,76 @@ export default function DashboardPage() {
                 <div>
                   <Label>Città</Label>
                   <Input value={editData.citta} onChange={(e) => setEditData({ ...editData, citta: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Zona (opzionale)</Label>
+                  <Input
+                    value={editData.zona}
+                    onChange={(e) => setEditData({ ...editData, zona: e.target.value })}
+                    placeholder='Es. "Centro", "Navigli"'
+                  />
+                  <p className="mt-1 text-xs text-[#1A1A1A]/55">
+                    Mostrata accanto alla città sotto al tuo nome.
+                  </p>
+                </div>
+                <div>
+                  <Label>Disponibilità</Label>
+                  <select
+                    value={editData.disponibilita}
+                    onChange={(e) => setEditData({ ...editData, disponibilita: e.target.value })}
+                    className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
+                  >
+                    <option value="">Non specificato</option>
+                    <option value="ricevo">Ricevo (incall)</option>
+                    <option value="altrui">Altrui (outcall)</option>
+                    <option value="entrambe">Ricevo / Altrui</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Orari disponibilità</Label>
+                  <select
+                    value={editData.orari_tipo}
+                    onChange={(e) => setEditData({ ...editData, orari_tipo: e.target.value })}
+                    className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
+                  >
+                    <option value="">Non specificato</option>
+                    <option value="24_7">24/7</option>
+                    <option value="h24">H24</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+                {editData.orari_tipo === 'altro' && (
+                  <div>
+                    <Label>Specifica orari</Label>
+                    <Input
+                      value={editData.orari_altro}
+                      onChange={(e) => setEditData({ ...editData, orari_altro: e.target.value })}
+                      maxLength={200}
+                      placeholder='Es. "Lun-Ven 10-22"'
+                    />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tariffa 30 min (€)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editData.tariffa_30min}
+                      onChange={(e) => setEditData({ ...editData, tariffa_30min: e.target.value })}
+                      placeholder="Es. 100"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tariffa 1 ora (€)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editData.tariffa_1ora}
+                      onChange={(e) => setEditData({ ...editData, tariffa_1ora: e.target.value })}
+                      placeholder="Es. 200"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label>Link OnlyFans</Label>
@@ -307,9 +438,13 @@ export default function DashboardPage() {
                   <Button
                     onClick={async () => {
                       const fd = new FormData();
-                      Object.entries(editData).forEach(([k, v]) => fd.append(k, v));
+                      Object.entries(editData).forEach(([k, v]) => {
+                        // Tariffe vuote → non inviare il campo (resta null sul DB)
+                        if ((k === 'tariffa_30min' || k === 'tariffa_1ora') && !v) return;
+                        fd.append(k, v);
+                      });
                       try {
-                        const updated = await professionisteApi.updateDashboard(fd);
+                        const updated = await escortApi.updateDashboard(fd);
                         setProfilo(updated);
                         setEditing(false);
                       } catch {}
@@ -348,7 +483,7 @@ export default function DashboardPage() {
           <div className="flex-1">
             <h3 className="font-semibold text-[#1A1A1A]">Indirizzo pubblico</h3>
             <p className="mt-1 text-sm text-[#1A1A1A]/60">
-              È l&apos;indirizzo mostrato sul tuo profilo e sulla mappa. Aggiornalo ogni volta che ti sposti — la mappa si aggiornerà al volo. Il tuo indirizzo privato non cambia.
+              È l&apos;indirizzo mostrato sulla tua scheda pubblica e sulla mappa. Aggiornalo ogni volta che ti sposti — la mappa si aggiornerà al volo. Il tuo indirizzo privato non cambia.
             </p>
           </div>
         </div>
@@ -381,8 +516,8 @@ export default function DashboardPage() {
               setMiTrovoError('');
               setMiTrovoLoading(true);
               try {
-                await professionisteApi.setMiTrovoQui(miTrovoIndirizzo.trim());
-                const refreshed = await professionisteApi.dashboard();
+                await escortApi.setMiTrovoQui(miTrovoIndirizzo.trim());
+                const refreshed = await escortApi.dashboard();
                 setProfilo(refreshed);
                 setMiTrovoIndirizzo('');
               } catch (e: any) {
@@ -408,6 +543,102 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Gestione video */}
+      <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
+            <Video className="h-5 w-5 text-[#E91E8C]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-[#1A1A1A]">I tuoi video</h3>
+            <p className="mt-1 text-sm text-[#1A1A1A]/60">
+              Puoi caricare fino a {MAX_VIDEO_PER_ESCORT} video brevi sulla tua scheda. Sono mostrati insieme alla galleria foto.
+            </p>
+          </div>
+        </div>
+
+        {videoError && (
+          <p className="mb-3 text-sm text-red-600">{videoError}</p>
+        )}
+
+        {videoList.length === 0 ? (
+          <p className="mb-3 text-sm text-[#1A1A1A]/50">Nessun video caricato.</p>
+        ) : (
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {videoList.map((v) => (
+              <div key={v.id} className="relative overflow-hidden rounded-xl border border-[#1A1A1A]/10 bg-[#F8F7F5]">
+                <video
+                  src={mediaUrl(v.video)}
+                  className="aspect-video w-full object-cover"
+                  controls
+                  preload="metadata"
+                />
+                <button
+                  type="button"
+                  aria-label="Elimina video"
+                  onClick={async () => {
+                    if (!confirm('Vuoi eliminare questo video?')) return;
+                    try {
+                      await escortApi.deleteVideo(v.id);
+                      setVideoList((prev) => prev.filter((x) => x.id !== v.id));
+                    } catch (e: any) {
+                      setVideoError(e.message || 'Errore durante l\'eliminazione.');
+                    }
+                  }}
+                  className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-red-600 shadow-sm transition-colors hover:bg-white"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {videoList.length < MAX_VIDEO_PER_ESCORT && (
+          <div>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setVideoError('');
+                setVideoUploading(true);
+                try {
+                  const created = await escortApi.addVideo(file);
+                  setVideoList((prev) => [...prev, created]);
+                } catch (err: any) {
+                  setVideoError(err.message || 'Caricamento fallito.');
+                } finally {
+                  setVideoUploading(false);
+                  if (videoInputRef.current) videoInputRef.current.value = '';
+                }
+              }}
+            />
+            <Button
+              onClick={() => videoInputRef.current?.click()}
+              disabled={videoUploading}
+              className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
+            >
+              {videoUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Caricamento…
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" /> Aggiungi video
+                </>
+              )}
+            </Button>
+            <p className="mt-2 text-xs text-[#1A1A1A]/55">
+              {videoList.length}/{MAX_VIDEO_PER_ESCORT} video caricati.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Stats */}
       <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-[#1A1A1A]/10 bg-white p-5 text-center">
@@ -423,6 +654,115 @@ export default function DashboardPage() {
           <p className="text-xs text-[#1A1A1A]/60">{profilo.numero_recensioni || 0} recensioni</p>
         </div>
       </div>
+
+      {/* Gestione scheda: pausa / cancellazione */}
+      <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
+        <h3 className="mb-1 font-semibold text-[#1A1A1A]">Gestione scheda</h3>
+        <p className="mb-4 text-sm text-[#1A1A1A]/60">
+          Puoi mettere temporaneamente in pausa la tua scheda (massimo una pausa al mese) oppure cancellarla definitivamente.
+        </p>
+
+        {pausaError && !profilo.in_pausa && (
+          <p className="mb-3 text-sm text-red-600">{pausaError}</p>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          {!profilo.in_pausa && (
+            <Button
+              variant="outline"
+              disabled={pausaLoading}
+              onClick={async () => {
+                if (!confirm('Vuoi davvero mettere in pausa la tua scheda? Sarà nascosta dalle ricerche fino alla riattivazione. Potrai riattivarla quando vuoi, ma potrai metterla in pausa di nuovo solo dopo 30 giorni.')) return;
+                setPausaError('');
+                setPausaLoading(true);
+                try {
+                  await escortApi.setPausa(true);
+                  const refreshed = await escortApi.dashboard();
+                  setProfilo(refreshed);
+                } catch (e: any) {
+                  setPausaError(e.message || 'Errore.');
+                } finally {
+                  setPausaLoading(false);
+                }
+              }}
+              className="border-amber-400 text-amber-700 hover:bg-amber-50"
+            >
+              {pausaLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Pause className="mr-2 h-4 w-4" />
+              )}
+              Metti in pausa
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            onClick={() => { setDeleteConfirmText(''); setDeleteOpen(true); }}
+            className="border-red-300 text-red-600 hover:bg-red-50"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Cancella scheda
+          </Button>
+        </div>
+
+        {profilo.prossima_pausa_disponibile_at && !profilo.in_pausa && (
+          <p className="mt-3 text-xs text-[#1A1A1A]/55">
+            Hai già usato la pausa di questo mese. Potrai metterla di nuovo in pausa dal{' '}
+            {new Date(profilo.prossima_pausa_disponibile_at).toLocaleDateString('it-IT')}.
+          </p>
+        )}
+      </div>
+
+      {/* Dialog conferma cancellazione */}
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-3 flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[#1A1A1A]">Cancella la tua scheda</h3>
+                <p className="mt-1 text-sm text-[#1A1A1A]/65">
+                  L&apos;azione è <strong>irreversibile</strong>: foto, video, recensioni e tutte le informazioni della scheda verranno eliminati. Il tuo account utente rimane attivo.
+                </p>
+              </div>
+            </div>
+            <div className="mb-3">
+              <Label>Per confermare, scrivi <strong>CANCELLA</strong> qui sotto:</Label>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="CANCELLA"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleteLoading}>
+                Annulla
+              </Button>
+              <Button
+                disabled={deleteLoading || deleteConfirmText.trim() !== 'CANCELLA'}
+                onClick={async () => {
+                  setDeleteLoading(true);
+                  try {
+                    await escortApi.cancellaScheda();
+                    // Dopo la cancellazione la scheda non c'è più: porto l'utente alla home.
+                    router.push('/');
+                  } catch (e: any) {
+                    alert(e.message || 'Errore durante la cancellazione.');
+                    setDeleteLoading(false);
+                  }
+                }}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancella definitivamente'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reviews */}
       <h2 className="mb-4 text-xl font-bold text-[#1A1A1A]">Recensioni ricevute</h2>
