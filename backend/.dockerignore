@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+Dockerfile
+.dockerignore
+.env
+.env.local
+staticfiles
+media

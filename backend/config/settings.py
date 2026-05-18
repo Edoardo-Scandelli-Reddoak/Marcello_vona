@@ -10,6 +10,22 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
+# Railway inietta automaticamente RAILWAY_PUBLIC_DOMAIN sui servizi pubblici:
+# aggiungiamo quel dominio agli ALLOWED_HOSTS così non serve farlo a mano.
+_railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+if _railway_domain and _railway_domain not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_railway_domain)
+
+# CSRF_TRUSTED_ORIGINS: necessario per il Django admin via HTTPS in produzione.
+# Va valorizzato con gli URL completi (schema + host), separati da virgola.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
+if _railway_domain:
+    railway_url = f'https://{_railway_domain}'
+    if railway_url not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(railway_url)
+
 INSTALLED_APPS = [
     'unfold',
     'unfold.contrib.filters',
@@ -37,6 +53,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serve gli static files direttamente dal processo gunicorn in produzione.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -88,6 +106,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# WhiteNoise: hashing + compressione per cache-friendly delivery.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -115,6 +135,9 @@ REST_FRAMEWORK = {
 }
 
 # JWT
+# In produzione il frontend (frontend.up.railway.app) e il backend (backend.up.railway.app)
+# vivono su domini diversi: per consentire l'invio del cookie auth cross-origin
+# serve SameSite='None' + Secure=True (impostati automaticamente quando DEBUG=False).
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -122,8 +145,12 @@ SIMPLE_JWT = {
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_SECURE': not DEBUG,
-    'AUTH_COOKIE_SAMESITE': 'Lax',
+    'AUTH_COOKIE_SAMESITE': 'None' if not DEBUG else 'Lax',
 }
+
+# Dietro al proxy HTTPS di Railway: Django deve fidarsi del header X-Forwarded-Proto
+# altrimenti redirect/cookie secure non funzionano correttamente.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Stripe (lasciate vuote in dev → checkout va in modalità mock)
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
