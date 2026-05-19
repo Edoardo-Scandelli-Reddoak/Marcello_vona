@@ -107,10 +107,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Difesa contro trailing whitespace in DATABASE_URL: il CLI di Railway e i
+# copy/paste dal dashboard a volte aggiungono spazi finali, che dj_database_url
+# lascia passare facendo finire i caratteri nel nome del database. Faccio strip
+# esplicito così l'errore "database 'railway  ' does not exist" non si ripresenta.
+_db_url = os.environ.get('DATABASE_URL', '').strip()
 DATABASES = {
-    'default': dj_database_url.config(
-        default='postgres://postgres:postgres@db:5432/directory_escort'
-    )
+    'default': dj_database_url.parse(_db_url) if _db_url
+    else dj_database_url.config(default='postgres://postgres:postgres@db:5432/directory_escort')
 }
 
 AUTH_USER_MODEL = 'accounts.User'
