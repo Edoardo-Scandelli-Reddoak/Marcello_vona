@@ -9,6 +9,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
+# --- Sentry --------------------------------------------------------------
+# Si attiva SOLO se SENTRY_DSN è settato in env; se non lo è, sentry_sdk.init
+# non viene neppure chiamato → zero overhead in dev.
+_sentry_dsn = os.environ.get('SENTRY_DSN', '').strip()
+if _sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[DjangoIntegration()],
+        # Quanti % delle richieste tracciare per performance (0 = solo errori).
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
+        # Quanti % degli errori catturare con session replay (server-side: N/A,
+        # ma teniamo coerente la nomenclatura con il frontend).
+        send_default_pii=False,  # NON inviare PII a Sentry (email, IP) per GDPR.
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'production' if not DEBUG else 'dev'),
+        release=os.environ.get('RAILWAY_GIT_COMMIT_SHA', None),
+    )
+
 
 # Helper: scarta valori non-validi (vuoti o senza host). Serve a sopravvivere
 # alle Railway references non ancora risolte: una variabile tipo

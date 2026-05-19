@@ -13,3 +13,5 @@ stripe==11.4.1
 gunicorn==23.0.0
 # Static files in production
 whitenoise==6.8.2
+# Error monitoring (no-op se SENTRY_DSN non è settato in env)
+sentry-sdk[django]==2.20.0
