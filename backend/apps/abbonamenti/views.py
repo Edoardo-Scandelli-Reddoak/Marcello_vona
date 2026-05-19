@@ -201,7 +201,12 @@ class MyAbbonamentiView(generics.ListAPIView):
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def stripe_webhook(request):
-    """Stripe webhook receiver. Activates the related Abbonamento on payment success."""
+    """Stripe webhook receiver. Activates the related Abbonamento on payment success.
+
+    NOTA: endpoint legacy mantenuto per backward compatibility. Per i nuovi setup
+    è preferibile `stripe_webhook_unified` (vedi `/api/stripe/webhook/`) che gestisce
+    sia abbonamenti che sblocchi social con un solo webhook configurato su Stripe.
+    """
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
     webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
@@ -226,6 +231,59 @@ def stripe_webhook(request):
                 abb.activate(
                     payment_method='stripe',
                     stripe_payment_intent_id=session.get('payment_intent', '') or '',
+                )
+
+    return Response({'received': True})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def stripe_webhook_unified(request):
+    """Webhook Stripe unificato — gestisce sia abbonamenti che sblocchi social.
+
+    Configurare UN SOLO webhook su Stripe Dashboard puntato a
+    `/api/stripe/webhook/`, evento `checkout.session.completed`.
+    Lo smistamento avviene leggendo `session.metadata.kind`:
+    - `sblocco_social` → attiva il record `SbloccoSocial`
+    - default (abbonamento_id presente) → attiva l'`Abbonamento`
+    """
+    from apps.sblocchi.models import SbloccoSocial  # lazy import per evitare cicli
+
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+
+    if webhook_secret:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # Senza secret accettiamo il payload non firmato (utile per test locali);
+        # in produzione `STRIPE_WEBHOOK_SECRET` DEVE essere settato.
+        try:
+            event = json.loads(payload.decode())
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    if event.get('type') == 'checkout.session.completed':
+        session = event['data']['object']
+        meta = session.get('metadata') or {}
+        payment_intent = session.get('payment_intent', '') or ''
+
+        if meta.get('kind') == 'sblocco_social' and meta.get('sblocco_id'):
+            sblocco = SbloccoSocial.objects.filter(id=meta['sblocco_id'], attivo=False).first()
+            if sblocco:
+                sblocco.attivo = True
+                sblocco.paid_at = timezone.now()
+                sblocco.stripe_payment_intent_id = payment_intent
+                sblocco.save(update_fields=['attivo', 'paid_at', 'stripe_payment_intent_id'])
+        elif meta.get('abbonamento_id'):
+            abb = Abbonamento.objects.filter(id=meta['abbonamento_id'], stato='in_attesa').first()
+            if abb:
+                abb.activate(
+                    payment_method='stripe',
+                    stripe_payment_intent_id=payment_intent,
                 )
 
     return Response({'received': True})

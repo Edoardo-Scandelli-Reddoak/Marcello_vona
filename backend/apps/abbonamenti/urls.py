@@ -8,4 +8,6 @@ urlpatterns = [
     path('abbonamenti/discount-info/', views.DiscountInfoView.as_view(), name='abbonamenti-discount-info'),
     path('abbonamenti/me/', views.MyAbbonamentiView.as_view(), name='abbonamenti-me'),
     path('abbonamenti/webhook/', views.stripe_webhook, name='abbonamenti-webhook'),
+    # Webhook unificato — endpoint preferito per nuovi setup.
+    path('stripe/webhook/', views.stripe_webhook_unified, name='stripe-webhook'),
 ]
