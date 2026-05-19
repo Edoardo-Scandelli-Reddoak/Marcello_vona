@@ -11,6 +11,11 @@ python manage.py migrate --noinput
 echo "→ Seed categorie..."
 python manage.py seed_categories || echo "seed_categories fallito (ignoro)"
 
+# Crea/aggiorna superuser admin se DJANGO_ADMIN_EMAIL/PASSWORD sono settati.
+# Idempotente — non rompe il boot se le env var mancano.
+echo "→ Ensure admin..."
+python manage.py ensure_admin || echo "ensure_admin fallito (ignoro)"
+
 # Seed dei 5 profili demo (idempotente: usa get_or_create).
 # Si esegue ad ogni deploy ma è no-op se i profili esistono già.
 # Per disabilitarlo definitivamente in produzione: settare SKIP_SEED_DEMO=1.
