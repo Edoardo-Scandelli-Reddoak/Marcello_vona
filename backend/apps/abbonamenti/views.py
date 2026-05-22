@@ -81,6 +81,8 @@ class CheckoutCreateView(APIView):
             })
 
         stripe.api_key = settings.STRIPE_SECRET_KEY
+        success_url = f'{frontend_url}/abbonamento/successo?session_id={{CHECKOUT_SESSION_ID}}'
+        cancel_url = f'{frontend_url}/abbonamento?cancelled=1'
         try:
             session = stripe.checkout.Session.create(
                 mode='payment',
@@ -97,15 +99,18 @@ class CheckoutCreateView(APIView):
                     },
                     'quantity': 1,
                 }],
-                success_url=f'{frontend_url}/abbonamento/successo?session_id={{CHECKOUT_SESSION_ID}}',
-                cancel_url=f'{frontend_url}/abbonamento?cancelled=1',
+                success_url=success_url,
+                cancel_url=cancel_url,
                 metadata={'abbonamento_id': str(abb.id)},
                 customer_email=request.user.email or None,
             )
         except stripe.error.StripeError as e:
             abb.stato = 'annullato'
             abb.save(update_fields=['stato'])
-            logger.exception('Stripe checkout creation failed')
+            logger.exception(
+                'Stripe checkout creation failed (success_url=%r, cancel_url=%r)',
+                success_url, cancel_url,
+            )
             return Response(
                 {'detail': f'Errore Stripe: {e.user_message or str(e)}'},
                 status=status.HTTP_502_BAD_GATEWAY,

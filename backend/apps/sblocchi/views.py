@@ -68,6 +68,8 @@ class SbloccoCheckoutView(APIView):
             })
 
         stripe.api_key = settings.STRIPE_SECRET_KEY
+        success_url = f'{frontend_url}/escort/{prof.slug}?social_unlocked=1&session_id={{CHECKOUT_SESSION_ID}}'
+        cancel_url = f'{frontend_url}/escort/{prof.slug}?social_cancelled=1'
         try:
             session = stripe.checkout.Session.create(
                 mode='payment',
@@ -83,14 +85,17 @@ class SbloccoCheckoutView(APIView):
                     },
                     'quantity': 1,
                 }],
-                success_url=f'{frontend_url}/escort/{prof.slug}?social_unlocked=1&session_id={{CHECKOUT_SESSION_ID}}',
-                cancel_url=f'{frontend_url}/escort/{prof.slug}?social_cancelled=1',
+                success_url=success_url,
+                cancel_url=cancel_url,
                 metadata={'sblocco_id': str(sblocco.id), 'kind': 'sblocco_social'},
                 customer_email=request.user.email or None,
             )
         except stripe.error.StripeError as e:
             sblocco.delete()
-            logger.exception('Stripe checkout creation failed (sblocco social)')
+            logger.exception(
+                'Stripe checkout creation failed (sblocco social, success_url=%r, cancel_url=%r)',
+                success_url, cancel_url,
+            )
             return Response(
                 {'detail': f'Errore Stripe: {e.user_message or str(e)}'},
                 status=status.HTTP_502_BAD_GATEWAY,

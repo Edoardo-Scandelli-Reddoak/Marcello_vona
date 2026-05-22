@@ -200,10 +200,14 @@ SIMPLE_JWT = {
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Stripe (lasciate vuote in dev → checkout va in modalità mock)
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '').strip()
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '').strip()
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '').strip()
+
+# Difesa contro whitespace/newline negli env Railway (stesso problema che ha
+# colpito DATABASE_URL): un trailing space in FRONTEND_URL fa sì che Stripe
+# rifiuti la Checkout Session con "Not a valid URL". Strip esplicito qui.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001').strip()
 
 # Email — in dev usa la console (le email vengono stampate nei log Django).
 # In produzione settare EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
