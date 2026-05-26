@@ -1,6 +1,8 @@
 import os
 import shutil
 from datetime import date
+from django.core.files import File
+from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.utils import timezone
@@ -180,6 +182,28 @@ RECENSIONI_SITO = [
 class Command(BaseCommand):
     help = 'Popola il database con 5 escort demo, recensioni e recensioni sito'
 
+    def _ensure_in_storage(self, source_dir, filename):
+        """Carica `filename` nel backend di storage configurato (R2 o filesystem)
+        se non è già presente. Il file sorgente è bundlato nell'image Docker a
+        BASE_DIR/media/escort/profilo/. Idempotente: in filesystem mode è no-op
+        perché il file è già lì; in R2 mode uploada solo al primo run dopo
+        l'attivazione del bucket.
+        """
+        target_path = f"escort/profilo/{filename}"
+        if default_storage.exists(target_path):
+            return
+        source_file = source_dir / filename
+        if not source_file.exists():
+            self.stdout.write(self.style.WARNING(
+                f'Foto sorgente mancante (skip upload storage): {source_file}'
+            ))
+            return
+        with open(source_file, 'rb') as f:
+            saved_path = default_storage.save(target_path, File(f))
+        self.stdout.write(self.style.SUCCESS(
+            f'Foto caricata nello storage: {saved_path}'
+        ))
+
     def handle(self, *args, **options):
         source_dir = settings.MEDIA_ROOT / 'escort' / 'profilo'
 
@@ -213,6 +237,11 @@ class Command(BaseCommand):
                 user.set_password('demo1234')
                 user.save()
 
+            # Assicura che la foto sia presente nello storage backend (R2 o
+            # filesystem). Senza questa chiamata, dopo l'attivazione di R2 i
+            # path foto_profilo/documento_* esistono nel DB ma puntano a un
+            # bucket vuoto → immagini broken.
+            self._ensure_in_storage(source_dir, p_data['foto'])
             foto_path = f"escort/profilo/{p_data['foto']}"
 
             prof, created = Professionista.objects.get_or_create(
