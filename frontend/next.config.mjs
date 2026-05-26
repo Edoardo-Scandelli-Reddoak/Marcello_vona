@@ -27,6 +27,8 @@ const nextConfig = {
       // Railway: tutti i sottodomini del PaaS
       { protocol: 'https', hostname: '**.railway.app' },
       { protocol: 'https', hostname: '**.up.railway.app' },
+      // Cloudflare R2 — signed URLs (jurisdiction EU)
+      { protocol: 'https', hostname: '**.r2.cloudflarestorage.com' },
     ],
   },
 };

@@ -153,11 +153,57 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# WhiteNoise: hashing + compressione per cache-friendly delivery.
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- Object storage (Cloudflare R2) -------------------------------------
+# Si attiva SOLO se TUTTE le R2_* env sono valorizzate. Senza, ricadiamo
+# sul filesystem locale (dev) → niente uploads su R2 da macchina dev per
+# sbaglio. In produzione su Railway le 4 vanno settate.
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID', '').strip()
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '').strip()
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', '').strip()
+R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL', '').strip()
+USE_R2 = bool(R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME and R2_ENDPOINT_URL)
+
+if USE_R2:
+    # Default ACL 'private' + signed URLs (querystring_auth=True): ogni URL
+    # generato da Django è una signed URL con scadenza. Per le foto pubbliche
+    # impostiamo expiry 24h: il React Query cache lato frontend si rinnova
+    # ben prima → utente non vede mai 403. Per i documenti d'identità in
+    # futuro useremo una storage class dedicata con expiry brevissima (5 min)
+    # + view admin-only.
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                'access_key': R2_ACCESS_KEY_ID,
+                'secret_key': R2_SECRET_ACCESS_KEY,
+                'bucket_name': R2_BUCKET_NAME,
+                'endpoint_url': R2_ENDPOINT_URL,
+                'region_name': 'auto',
+                'signature_version': 's3v4',
+                'addressing_style': 'virtual',
+                'default_acl': 'private',
+                'querystring_auth': True,
+                'querystring_expire': 86400,  # 24h
+                'file_overwrite': False,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+else:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

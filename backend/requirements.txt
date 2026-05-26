@@ -15,3 +15,7 @@ gunicorn==23.0.0
 whitenoise==6.8.2
 # Error monitoring (no-op se SENTRY_DSN non è settato in env)
 sentry-sdk[django]==2.20.0
+# Object storage (S3-compatibile, usato con Cloudflare R2).
+# Si attiva solo se R2_* env vars sono settate; altrimenti il default
+# filesystem storage continua a funzionare per dev locale.
+django-storages[s3]==1.14.4
