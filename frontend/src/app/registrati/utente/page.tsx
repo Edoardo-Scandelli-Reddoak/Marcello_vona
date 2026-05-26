@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
+
+const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 export default function RegistratiUtentePage() {
   const router = useRouter();
@@ -19,20 +21,36 @@ export default function RegistratiUtentePage() {
   const [accetto, setAccetto] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!nome.trim()) {
-      setError('Inserisci il nome che vuoi far visualizzare.');
+    const missing: string[] = [];
+    if (!nome.trim()) missing.push('Nome visualizzato');
+    if (!email.trim()) missing.push('Email');
+    if (!password) missing.push('Password');
+    if (!passwordConfirm) missing.push('Conferma password');
+    if (missing.length > 0) {
+      setError(`Compila i campi obbligatori mancanti: ${missing.join(', ')}.`);
       return;
     }
-    if (password !== passwordConfirm) {
-      setError('Le password non corrispondono.');
+    if (!isEmail(email)) {
+      setError('Inserisci un indirizzo email valido.');
       return;
     }
     if (password.length < 8) {
       setError('La password deve avere almeno 8 caratteri.');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError('Le password non corrispondono.');
       return;
     }
     if (!accetto) {
@@ -59,7 +77,13 @@ export default function RegistratiUtentePage() {
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        <div
+          ref={errorRef}
+          role="alert"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700"
+        >
+          {error}
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">

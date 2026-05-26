@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
 import { escortApi, tagsApi, type Categoria } from '@/lib/api';
 
+const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 interface Tag {
   id: number;
   nome: string;
@@ -28,6 +30,13 @@ export default function RegistrazionePage() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
 
   // Step 1
   const [email, setEmail] = useState('');
@@ -113,6 +122,18 @@ export default function RegistrazionePage() {
 
   const handleStep1 = async () => {
     setError('');
+    if (!email.trim() || !password || !passwordConfirm) {
+      setError('Compila email, password e conferma password.');
+      return;
+    }
+    if (!isEmail(email)) {
+      setError('Inserisci un indirizzo email valido.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('La password deve avere almeno 8 caratteri.');
+      return;
+    }
     if (password !== passwordConfirm) {
       setError('Le password non corrispondono.');
       return;
@@ -129,12 +150,16 @@ export default function RegistrazionePage() {
   };
 
   const handleStep2 = () => {
-    if (!nome || !categoria || !telefono) {
-      setError('Compila tutti i campi obbligatori.');
-      return;
-    }
-    if (!via || !cap || !citta || !provincia) {
-      setError('Compila tutti i campi dell\'indirizzo.');
+    const missing: string[] = [];
+    if (!nome.trim()) missing.push('Nome visualizzato');
+    if (!categoria) missing.push('Categoria');
+    if (!telefono.trim()) missing.push('Telefono');
+    if (!via.trim()) missing.push('Via / Indirizzo');
+    if (!cap.trim()) missing.push('CAP');
+    if (!citta.trim()) missing.push('Città');
+    if (!provincia.trim()) missing.push('Provincia');
+    if (missing.length > 0) {
+      setError(`Compila i campi obbligatori mancanti: ${missing.join(', ')}.`);
       return;
     }
     const invalidUrl = (v: string) => v.trim() && !/^https?:\/\//i.test(v.trim());
@@ -243,7 +268,15 @@ export default function RegistrazionePage() {
         ))}
       </div>
 
-      {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && (
+        <div
+          ref={errorRef}
+          role="alert"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Step 1 — Account */}
       {step === 0 && (
