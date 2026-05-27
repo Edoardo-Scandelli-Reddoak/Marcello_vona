@@ -243,6 +243,13 @@ class ProfessionistaCreateSerializer(serializers.ModelSerializer):
             'onlyfans_url', 'instagram_url', 'facebook_url', 'tiktok_url', 'telegram_url',
             'privacy_accettata', 'termini_accettati', 'galleria', 'video',
         )
+        # I documenti d'identità sono dati personali sensibili: si accettano in
+        # upload ma NON devono mai comparire in una risposta API (nemmeno nella
+        # response di creazione). Sono visibili solo agli admin via Django admin.
+        extra_kwargs = {
+            'documento_fronte': {'write_only': True},
+            'documento_retro': {'write_only': True},
+        }
 
     def validate_onlyfans_url(self, value):
         return _normalize_social_url(value)

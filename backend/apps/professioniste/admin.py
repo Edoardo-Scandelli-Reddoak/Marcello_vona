@@ -41,15 +41,31 @@ class ProfessionistaAdmin(ModelAdmin):
     inlines = [FotoInline, VideoInline]
     actions = ['approva_escort', 'rifiuta_escort']
 
+    @staticmethod
+    def _doc_url(filefield):
+        """URL del documento con scadenza breve (5 min) quando lo storage è
+        S3/R2 (signed URL), così il link non resta valido a lungo se finisce
+        nella cache del browser o nei log. Con FileSystemStorage (dev) ricade
+        sull'URL normale (`.url()` non accetta `expire`).
+        """
+        if not filefield:
+            return None
+        try:
+            return filefield.storage.url(filefield.name, expire=300)
+        except TypeError:
+            return filefield.url
+
     def documento_fronte_preview(self, obj):
-        if obj.documento_fronte:
-            return format_html('<img src="{}" style="max-width:400px;max-height:300px;" />', obj.documento_fronte.url)
+        url = self._doc_url(obj.documento_fronte)
+        if url:
+            return format_html('<img src="{}" style="max-width:400px;max-height:300px;" />', url)
         return '-'
     documento_fronte_preview.short_description = 'Documento Fronte'
 
     def documento_retro_preview(self, obj):
-        if obj.documento_retro:
-            return format_html('<img src="{}" style="max-width:400px;max-height:300px;" />', obj.documento_retro.url)
+        url = self._doc_url(obj.documento_retro)
+        if url:
+            return format_html('<img src="{}" style="max-width:400px;max-height:300px;" />', url)
         return '-'
     documento_retro_preview.short_description = 'Documento Retro'
 
