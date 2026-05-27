@@ -1,4 +1,3 @@
-import json
 import logging
 
 import stripe
@@ -150,20 +149,11 @@ class SbloccoCheckSessionView(APIView):
 @permission_classes([permissions.AllowAny])
 def stripe_webhook(request):
     """Webhook Stripe per gli sblocchi social. Riconosce metadata.kind == 'sblocco_social'."""
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
-    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+    from apps.abbonamenti.views import construct_stripe_event
 
-    if webhook_secret:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except (ValueError, stripe.error.SignatureVerificationError):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-    else:
-        try:
-            event = json.loads(payload.decode())
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+    event = construct_stripe_event(request)
+    if event is None:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     if event.get('type') == 'checkout.session.completed':
         session = event['data']['object']

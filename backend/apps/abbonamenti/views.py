@@ -20,6 +20,41 @@ def _stripe_enabled() -> bool:
     return bool(getattr(settings, 'STRIPE_SECRET_KEY', ''))
 
 
+def construct_stripe_event(request):
+    """Verifica e ritorna l'evento Stripe dal payload del webhook.
+
+    - STRIPE_WEBHOOK_SECRET settato → verifica la firma HMAC; firma non valida → None.
+    - NON settato → in DEBUG accetta il payload non firmato (test locali con
+      stripe-cli); in produzione RIFIUTA (fail-closed) per non accettare
+      webhook falsificabili.
+
+    Ritorna l'evento (oggetto Stripe o dict) oppure None se va rifiutato:
+    il chiamante in quel caso risponde 400.
+    """
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+
+    if webhook_secret:
+        try:
+            return stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError):
+            logger.warning('Webhook Stripe con firma non valida: rifiutato.')
+            return None
+
+    if not settings.DEBUG:
+        logger.error(
+            'Webhook Stripe ricevuto senza STRIPE_WEBHOOK_SECRET in produzione: '
+            'rifiutato (impossibile verificare la firma).'
+        )
+        return None
+
+    try:
+        return json.loads(payload.decode())
+    except Exception:
+        return None
+
+
 class PianiListView(generics.ListAPIView):
     """Returns all active subscription plans, public."""
     serializer_class = PianoAbbonamentoSerializer
@@ -212,20 +247,9 @@ def stripe_webhook(request):
     è preferibile `stripe_webhook_unified` (vedi `/api/stripe/webhook/`) che gestisce
     sia abbonamenti che sblocchi social con un solo webhook configurato su Stripe.
     """
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
-    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
-
-    if webhook_secret:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except (ValueError, stripe.error.SignatureVerificationError):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-    else:
-        try:
-            event = json.loads(payload.decode())
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+    event = construct_stripe_event(request)
+    if event is None:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     if event.get('type') == 'checkout.session.completed':
         session = event['data']['object']
@@ -254,22 +278,9 @@ def stripe_webhook_unified(request):
     """
     from apps.sblocchi.models import SbloccoSocial  # lazy import per evitare cicli
 
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
-    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
-
-    if webhook_secret:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except (ValueError, stripe.error.SignatureVerificationError):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-    else:
-        # Senza secret accettiamo il payload non firmato (utile per test locali);
-        # in produzione `STRIPE_WEBHOOK_SECRET` DEVE essere settato.
-        try:
-            event = json.loads(payload.decode())
-        except Exception:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+    event = construct_stripe_event(request)
+    if event is None:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     if event.get('type') == 'checkout.session.completed':
         session = event['data']['object']
