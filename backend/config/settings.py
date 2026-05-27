@@ -225,6 +225,13 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12,
+    # Throttle applicato SOLO alle view che dichiarano throttle_scope (login,
+    # register) via ScopedRateThrottle — non globale, così le API pubbliche
+    # (listing escort, ecc.) non vengono limitate. Conta per IP sugli anonimi.
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '10/min',
+        'register': '20/hour',
+    },
 }
 
 # JWT
@@ -244,6 +251,20 @@ SIMPLE_JWT = {
 # Dietro al proxy HTTPS di Railway: Django deve fidarsi del header X-Forwarded-Proto
 # altrimenti redirect/cookie secure non funzionano correttamente.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# --- Security headers ----------------------------------------------------
+# Sicuri anche in dev (HSTS su http è ignorato dai browser, nosniff/referrer
+# non danno fastidio). Quelli che forzano HTTPS stanno sotto `if not DEBUG`
+# così non rompono il dev locale su http://localhost.
+SECURE_CONTENT_TYPE_NOSNIFF = True          # blocca il MIME-sniffing
+SECURE_REFERRER_POLICY = 'same-origin'      # privacy: nessun referrer verso siti esterni
+X_FRAME_OPTIONS = 'DENY'                     # anti-clickjacking (no framing del sito)
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True               # http → https
+    SECURE_HSTS_SECONDS = 31536000           # 1 anno
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Stripe (lasciate vuote in dev → checkout va in modalità mock)
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '').strip()
