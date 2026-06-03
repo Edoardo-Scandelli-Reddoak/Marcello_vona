@@ -20,6 +20,18 @@ function formatGiorni(g: number): string {
   return g === 1 ? '1 giorno' : `${g} giorni`;
 }
 
+function formatCountdown(remainingMs: number): string {
+  if (remainingMs <= 0) return 'scaduta';
+  const totalSec = Math.floor(remainingMs / 1000);
+  const giorni = Math.floor(totalSec / 86400);
+  const ore = Math.floor((totalSec % 86400) / 3600);
+  const minuti = Math.floor((totalSec % 3600) / 60);
+  const secondi = totalSec % 60;
+  if (giorni > 0) return `${giorni}g ${ore}h ${minuti}m`;
+  if (ore > 0) return `${ore}h ${minuti}m ${secondi}s`;
+  return `${minuti}m ${secondi}s`;
+}
+
 const STANDARD_FEATURES = [
   'Scheda pubblicata e visibile',
   'Inclusione nei risultati di ricerca',
@@ -51,16 +63,23 @@ export default function AbbonamentoPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Promo Early Bird: endpoint pubblico, mostriamo il countdown anche agli
+  // utenti non loggati così invogliamo all'iscrizione.
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      setDiscount(null);
-      return;
-    }
     abbonamentiApi.discountInfo().then(setDiscount).catch(() => setDiscount(null));
-  }, [authLoading, user]);
+  }, []);
 
-  const discountPct = discount?.early_bird_eligible ? discount.discount_pct : 0;
+  // Tick ogni secondo per aggiornare il countdown.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!discount?.attiva || !discount.scadenza) return;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [discount?.attiva, discount?.scadenza]);
+
+  const promoEndsAt = discount?.scadenza ? new Date(discount.scadenza).getTime() : 0;
+  const promoActive = !!discount?.attiva && promoEndsAt > nowMs;
+  const remainingMs = promoActive ? promoEndsAt - nowMs : 0;
 
   const { standard, evidenza } = useMemo(() => {
     const sortByDays = (a: PianoAbbonamento, b: PianoAbbonamento) => a.durata_giorni - b.durata_giorni;
@@ -125,17 +144,21 @@ export default function AbbonamentoPage() {
       )}
       {error && <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-      {discount?.early_bird_eligible && (
+      {promoActive && (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#E91E8C]/30 bg-gradient-to-br from-[#E91E8C]/10 to-transparent p-5">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C] text-white">
             <Gift className="h-5 w-5" aria-hidden="true" />
           </div>
-          <div>
+          <div className="flex-1">
             <h3 className="font-bold text-[#1A1A1A]">
-              Sei tra le prime {discount.limit} iscritte! Sconto del {discount.discount_pct}% applicato
+              Promo {discount?.nome || 'Early Bird'} — sconto fino al 70% su tutti i pacchetti
             </h3>
             <p className="mt-1 text-sm text-[#1A1A1A]/70">
-              Lo sconto è automatico e vale su qualsiasi pacchetto, anche per i rinnovi futuri.
+              Termina tra{' '}
+              <span className="font-semibold text-[#E91E8C]" suppressHydrationWarning>
+                {formatCountdown(remainingMs)}
+              </span>
+              . Lo sconto è automatico al checkout.
             </p>
           </div>
         </div>
@@ -150,7 +173,7 @@ export default function AbbonamentoPage() {
             features={STANDARD_FEATURES}
             onPurchase={handlePurchase}
             checkoutId={checkoutId}
-            discountPct={discountPct}
+            promoActive={promoActive}
           />
         )}
         {evidenza.length > 0 && (
@@ -162,7 +185,7 @@ export default function AbbonamentoPage() {
             onPurchase={handlePurchase}
             checkoutId={checkoutId}
             highlighted
-            discountPct={discountPct}
+            promoActive={promoActive}
           />
         )}
       </div>
@@ -178,7 +201,7 @@ interface PianoBoxProps {
   onPurchase: (piano: PianoAbbonamento) => void;
   checkoutId: number | null;
   highlighted?: boolean;
-  discountPct?: number;
+  promoActive?: boolean;
 }
 
 function PianoBox({
@@ -189,16 +212,17 @@ function PianoBox({
   onPurchase,
   checkoutId,
   highlighted = false,
-  discountPct = 0,
+  promoActive = false,
 }: PianoBoxProps) {
   // Default selection: middle option (e.g. 30g for standard, 7g for evidenza)
   const defaultIndex = Math.floor((piani.length - 1) / 2);
   const [index, setIndex] = useState(defaultIndex);
   const piano = piani[Math.min(index, piani.length - 1)];
-  const finalPrice = piano.prezzo_eur * (1 - discountPct / 100);
+  const effectiveDiscount = promoActive ? piano.sconto_percentuale : 0;
+  const finalPrice = piano.prezzo_eur * (1 - effectiveDiscount / 100);
   const prezzoGiornaliero = piano.durata_giorni > 1 ? finalPrice / piano.durata_giorni : null;
   const isLoading = checkoutId === piano.id;
-  const hasDiscount = discountPct > 0;
+  const hasDiscount = effectiveDiscount > 0;
 
   return (
     <div
@@ -237,7 +261,7 @@ function PianoBox({
           )}
           {hasDiscount && (
             <span className="rounded-full bg-[#E91E8C]/10 px-2 py-0.5 font-semibold text-[#E91E8C]">
-              -{discountPct}% Early Bird
+              -{effectiveDiscount}% Early Bird
             </span>
           )}
         </div>

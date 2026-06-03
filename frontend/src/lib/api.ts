@@ -176,6 +176,7 @@ export interface PianoAbbonamento {
   durata_giorni: number;
   prezzo_centesimi: number;
   prezzo_eur: number;
+  sconto_percentuale: number;
   ordine: number;
 }
 
@@ -201,10 +202,9 @@ export interface CheckoutResponse {
 }
 
 export interface DiscountInfo {
-  early_bird_eligible: boolean;
-  discount_pct: number;
-  limit: number;
-  remaining_slots: number;
+  attiva: boolean;
+  scadenza: string | null;
+  nome: string;
 }
 
 export const abbonamentiApi = {
