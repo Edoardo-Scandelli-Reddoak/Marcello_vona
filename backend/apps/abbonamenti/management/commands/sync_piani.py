@@ -49,6 +49,29 @@ class Command(BaseCommand):
                 updated_count += 1
                 self.stdout.write(f'Aggiornato: {piano}')
 
+        # Pulizia "piani fantasma": ciò che non è nel listino ufficiale viene
+        # rimosso. Se però ha abbonamenti collegati (FK PROTECT) non possiamo
+        # cancellarlo senza rompere lo storico → in quel caso lo disattiviamo
+        # soltanto, così sparisce dalla pagina prezzi ma il record resta.
+        listino_keys = {(tipo, durata) for tipo, durata, _ in PIANI}
+        deleted_count = 0
+        deactivated_count = 0
+        for piano in PianoAbbonamento.objects.all():
+            if (piano.tipo, piano.durata_giorni) in listino_keys:
+                continue
+            if piano.abbonamenti.exists():
+                if piano.attivo:
+                    piano.attivo = False
+                    piano.save(update_fields=['attivo'])
+                    deactivated_count += 1
+                    self.stdout.write(self.style.WARNING(
+                        f'Disattivato (ha abbonamenti storici, non cancellabile): {piano}'
+                    ))
+            else:
+                self.stdout.write(self.style.WARNING(f'Eliminato (fuori listino): {piano}'))
+                piano.delete()
+                deleted_count += 1
+
         # Promozione di default: disattivata, scadenza 30 giorni da ora. L'admin la
         # attiva e regola la scadenza dal pannello quando vuole lanciare la promo.
         if not Promozione.objects.exists():
@@ -60,5 +83,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Promozione "Early Bird" creata (disattivata, scadenza +30g).'))
 
         self.stdout.write(self.style.SUCCESS(
-            f'Sync piani completato. Creati: {created_count}, aggiornati: {updated_count}.'
+            f'Sync piani completato. Creati: {created_count}, aggiornati: {updated_count}, '
+            f'eliminati: {deleted_count}, disattivati: {deactivated_count}.'
         ))
