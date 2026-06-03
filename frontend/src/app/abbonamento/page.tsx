@@ -204,46 +204,7 @@ export default function AbbonamentoPage() {
             )}
           </div>
         </div>
-      ) : (
-        <div className="mb-6 rounded-2xl border border-[#1A1A1A]/10 bg-white p-4">
-          <label htmlFor="promo-input" className="mb-2 block text-sm font-semibold text-[#1A1A1A]">
-            Hai un codice referral?
-          </label>
-          <div className="flex flex-wrap items-start gap-2">
-            <Input
-              id="promo-input"
-              type="text"
-              value={promoInput}
-              onChange={(e) => {
-                setPromoInput(e.target.value);
-                if (promoInputError) setPromoInputError('');
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  applyPromoInput();
-                }
-              }}
-              placeholder="es. BENVENUTO50"
-              className="flex-1 min-w-[200px] uppercase"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={applyPromoInput}
-              disabled={!promoInput.trim() || promoInputLoading}
-            >
-              {promoInputLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Applica'}
-            </Button>
-          </div>
-          {promoInputError && (
-            <p className="mt-2 text-xs text-red-600">{promoInputError}</p>
-          )}
-        </div>
-      )}
-      {!promoCode?.valido && promoActive ? (
+      ) : promoActive ? (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#E91E8C]/30 bg-gradient-to-br from-[#E91E8C]/10 to-transparent p-5">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C] text-white">
             <Gift className="h-5 w-5" aria-hidden="true" />
@@ -290,6 +251,47 @@ export default function AbbonamentoPage() {
           />
         )}
       </div>
+
+      {/* Box codice referral sotto ai piani (visibile finché nessun codice è applicato). */}
+      {!promoCode?.valido && (
+        <div className="mt-6 rounded-2xl border border-[#1A1A1A]/10 bg-white p-4">
+          <label htmlFor="promo-input" className="mb-2 block text-sm font-semibold text-[#1A1A1A]">
+            Hai un codice referral?
+          </label>
+          <div className="flex flex-wrap items-start gap-2">
+            <Input
+              id="promo-input"
+              type="text"
+              value={promoInput}
+              onChange={(e) => {
+                setPromoInput(e.target.value);
+                if (promoInputError) setPromoInputError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  applyPromoInput();
+                }
+              }}
+              placeholder="Inserisci il tuo codice referral"
+              className="flex-1 min-w-[200px]"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={applyPromoInput}
+              disabled={!promoInput.trim() || promoInputLoading}
+            >
+              {promoInputLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Applica'}
+            </Button>
+          </div>
+          {promoInputError && (
+            <p className="mt-2 text-xs text-red-600">{promoInputError}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
