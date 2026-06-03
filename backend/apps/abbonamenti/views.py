@@ -9,8 +9,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.professioniste.models import Professionista, EARLY_BIRD_DISCOUNT_PCT, EARLY_BIRD_LIMIT
-from .models import PianoAbbonamento, Abbonamento
+from apps.professioniste.models import Professionista
+from .models import PianoAbbonamento, Abbonamento, Promozione
 from .serializers import PianoAbbonamentoSerializer, AbbonamentoSerializer
 
 logger = logging.getLogger(__name__)
@@ -89,10 +89,12 @@ class CheckoutCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Promozione globale attiva + sconto specifico del piano. Niente sconto
+        # se la promozione non è attiva o il piano ha sconto_percentuale = 0.
         amount_cents = piano.prezzo_centesimi
         discount_applied = False
-        if prof.is_early_bird:
-            amount_cents = amount_cents * (100 - EARLY_BIRD_DISCOUNT_PCT) // 100
+        if Promozione.get_current() is not None and piano.sconto_percentuale > 0:
+            amount_cents = amount_cents * (100 - piano.sconto_percentuale) // 100
             discount_applied = True
 
         abb = Abbonamento.objects.create(
@@ -203,29 +205,23 @@ class CheckSessionView(APIView):
 
 
 class DiscountInfoView(APIView):
-    """Tells the client whether the authenticated escort qualifies for the
-    Early Bird 50% discount (first 10 registered).
+    """Stato della Promozione Early Bird globale.
 
-    Returns a non-eligible payload for unauthenticated users or non-professionisti.
+    Pubblica (anche per anonimi) perché la pagina prezzi mostra il countdown
+    anche prima del login. Lo sconto per piano viene letto dal serializer di
+    PianoAbbonamento (campo `sconto_percentuale`).
     """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        payload = {
-            'early_bird_eligible': False,
-            'discount_pct': 0,
-            'limit': EARLY_BIRD_LIMIT,
-            'remaining_slots': max(0, EARLY_BIRD_LIMIT - Professionista.objects.count()),
-        }
-        if not request.user.is_authenticated:
-            return Response(payload)
-        prof = Professionista.objects.filter(user=request.user).first()
-        if not prof:
-            return Response(payload)
-        if prof.is_early_bird:
-            payload['early_bird_eligible'] = True
-            payload['discount_pct'] = EARLY_BIRD_DISCOUNT_PCT
-        return Response(payload)
+        promo = Promozione.get_current()
+        if promo is None:
+            return Response({'attiva': False, 'scadenza': None, 'nome': ''})
+        return Response({
+            'attiva': True,
+            'scadenza': promo.scadenza.isoformat(),
+            'nome': promo.nome,
+        })
 
 
 class MyAbbonamentiView(generics.ListAPIView):

@@ -8,7 +8,10 @@ class PianoAbbonamentoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PianoAbbonamento
-        fields = ('id', 'tipo', 'tipo_display', 'nome', 'durata_giorni', 'prezzo_centesimi', 'prezzo_eur', 'ordine')
+        fields = (
+            'id', 'tipo', 'tipo_display', 'nome', 'durata_giorni',
+            'prezzo_centesimi', 'prezzo_eur', 'sconto_percentuale', 'ordine',
+        )
 
 
 class AbbonamentoSerializer(serializers.ModelSerializer):

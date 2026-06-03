@@ -3,9 +3,6 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
 
-EARLY_BIRD_LIMIT = 10
-EARLY_BIRD_DISCOUNT_PCT = 50
-
 # Distanza minima (in giorni) tra una pausa e la successiva: massimo 1 pausa al mese.
 PAUSA_COOLDOWN_DAYS = 30
 
@@ -194,13 +191,11 @@ class Professionista(models.Model):
 
     @property
     def is_early_bird(self) -> bool:
-        """True if this escort is among the first EARLY_BIRD_LIMIT registered."""
-        from django.db.models import Q
-        before = type(self).objects.filter(
-            Q(created_at__lt=self.created_at)
-            | Q(created_at=self.created_at, id__lt=self.id)
-        ).count()
-        return before < EARLY_BIRD_LIMIT
+        """True se la Promozione globale è attiva e non scaduta. Lo sconto
+        effettivo viene poi letto da `piano.sconto_percentuale` per piano.
+        """
+        from apps.abbonamenti.models import Promozione
+        return Promozione.get_current() is not None
 
     @property
     def rating_medio(self):

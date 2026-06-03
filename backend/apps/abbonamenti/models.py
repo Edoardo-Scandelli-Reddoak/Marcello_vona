@@ -18,6 +18,11 @@ class PianoAbbonamento(models.Model):
         verbose_name='Prezzo (centesimi €)',
         help_text='Es. 1990 per 19,90 €.',
     )
+    sconto_percentuale = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Sconto Early Bird (%)',
+        help_text='Percentuale di sconto applicata se la Promozione globale è attiva. 0 = nessuno sconto.',
+    )
     ordine = models.PositiveIntegerField(default=0)
     attivo = models.BooleanField(default=True)
 
@@ -32,6 +37,33 @@ class PianoAbbonamento(models.Model):
     @property
     def prezzo_eur(self) -> float:
         return self.prezzo_centesimi / 100.0
+
+
+class Promozione(models.Model):
+    """Singleton: la promozione Early Bird globale. Solo il primo record è
+    significativo (l'admin non dovrebbe crearne più di uno). Quando attiva e
+    scadenza > now, tutti i piani con sconto_percentuale > 0 applicano lo
+    sconto in fase di checkout.
+    """
+    nome = models.CharField(max_length=80, default='Early Bird', help_text='Nome visualizzato (informativo).')
+    attiva = models.BooleanField(default=False, help_text='Disattiva qui per fermare la promozione anche prima della scadenza.')
+    scadenza = models.DateTimeField(help_text='Data e ora di fine promozione. Dopo questo istante lo sconto non viene più applicato.')
+
+    class Meta:
+        verbose_name = 'Promozione'
+        verbose_name_plural = 'Promozione'
+
+    def __str__(self):
+        return f'{self.nome} (attiva={self.attiva}, fino al {self.scadenza:%Y-%m-%d %H:%M})'
+
+    @property
+    def is_current(self) -> bool:
+        return self.attiva and self.scadenza > timezone.now()
+
+    @classmethod
+    def get_current(cls) -> 'Promozione | None':
+        promo = cls.objects.first()
+        return promo if promo and promo.is_current else None
 
 
 class Abbonamento(models.Model):

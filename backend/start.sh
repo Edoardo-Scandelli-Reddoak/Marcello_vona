@@ -11,6 +11,12 @@ python manage.py migrate --noinput
 echo "→ Seed categorie..."
 python manage.py seed_categories || echo "seed_categories fallito (ignoro)"
 
+# Sync dei piani di abbonamento (listino ufficiale, prezzi, sconti).
+# Idempotente: ri-eseguibile ad ogni deploy. Crea anche la Promozione di
+# default (disattivata) se mancante.
+echo "→ Sync piani abbonamento..."
+python manage.py sync_piani || echo "sync_piani fallito (ignoro)"
+
 # Crea/aggiorna superuser admin se DJANGO_ADMIN_EMAIL/PASSWORD sono settati.
 # Idempotente — non rompe il boot se le env var mancano.
 echo "→ Ensure admin..."
