@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import EscortCard from '@/components/EscortCard';
@@ -52,13 +53,23 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#1A1A1A] py-16 text-white sm:py-20 md:py-24">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#E91E8C]/20 to-transparent" />
+      <section className="relative overflow-hidden bg-[#1A1A1A] py-24 text-white sm:py-32 md:py-40">
+        <Image
+          src="/hero-home.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* Overlay scuro a sx → trasparente a dx per mantenere leggibilità del testo
+            senza coprire il soggetto dell'immagine sulla destra. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/85 via-[#1A1A1A]/55 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 text-left">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          <h1 className="text-3xl font-bold tracking-tight drop-shadow-md sm:text-5xl md:text-6xl">
             Le migliori <span className="text-[#E91E8C]">escort</span><br />a 5 stelle
           </h1>
-          <p className="mt-3 max-w-2xl text-base text-white/70 sm:mt-4 sm:text-lg">
+          <p className="mt-3 max-w-2xl text-base text-white/80 drop-shadow sm:mt-4 sm:text-lg">
             Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!
           </p>
         </div>
