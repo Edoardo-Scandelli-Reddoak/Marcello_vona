@@ -207,18 +207,21 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source_dir = settings.MEDIA_ROOT / 'escort' / 'profilo'
 
-        # Ensure the 10 standard tags exist (idempotent), and remove any stale tag
-        # that isn't in the standard list (so the catalog stays clean).
-        tag_objects = {}
-        for nome in TAG_STANDARD:
-            obj, _ = Tag.objects.get_or_create(nome=nome)
-            tag_objects[nome] = obj
-        stale = Tag.objects.exclude(nome__in=TAG_STANDARD)
-        if stale.exists():
-            self.stdout.write(self.style.WARNING(
-                f'Rimozione di {stale.count()} tag non più nello standard: {[t.nome for t in stale]}'
+        # Bootstrap del catalogo tag SOLO al primissimo deploy (Tag table
+        # vuota): crea i 10 default così le escort demo hanno qualcosa da
+        # referenziare. Dopo, l'admin è la source of truth: niente più
+        # creazioni o cancellazioni automatiche, altrimenti le modifiche
+        # fatte dal pannello vengono sovrascritte ad ogni deploy.
+        if not Tag.objects.exists():
+            for nome in TAG_STANDARD:
+                Tag.objects.create(nome=nome)
+            self.stdout.write(self.style.SUCCESS(
+                f'Bootstrap catalogo tag: creati {len(TAG_STANDARD)} tag default.'
             ))
-            stale.delete()
+        # Map per riferirsi ai tag esistenti per nome (solo quelli presenti):
+        # le escort demo proveranno ad assegnare i propri tag e salteranno
+        # eventuali nomi non più nel catalogo.
+        existing_tags = {t.nome: t for t in Tag.objects.all()}
 
         # Create escort
         for p_data in ESCORT:
@@ -326,7 +329,9 @@ class Command(BaseCommand):
                 prof.save()
             # Always re-sync tags so the demo profiles stay aligned with TAG_STANDARD
             # even when re-running the seed.
-            prof.tags.set([tag_objects[t] for t in p_data['tags']])
+            # Assegna solo i tag che esistono ancora nel catalogo (l'admin
+            # potrebbe averne rinominati o cancellati dei default).
+            prof.tags.set([existing_tags[t] for t in p_data['tags'] if t in existing_tags])
             if created:
                 self.stdout.write(self.style.SUCCESS(f'Creata: {prof.nome}'))
             else:
