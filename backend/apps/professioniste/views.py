@@ -77,16 +77,31 @@ class ProfessionistaListView(generics.ListAPIView):
         return qs
 
 
+FEATURED_ROTATION_SECONDS = 600  # ogni 10 minuti l'ordine si rimescola
+FEATURED_LIMIT = 12
+
+
 class ProfessionistaFeaturedView(generics.ListAPIView):
-    """Le più apprezzate - ordinate per rating."""
+    """Le più apprezzate.
+
+    Rotazione automatica: per dare visibilità a tutte le escort in evidenza,
+    l'ordine è uno shuffle deterministico con seed = floor(now /
+    FEATURED_ROTATION_SECONDS). Tutti gli utenti vedono lo stesso ordine
+    nella stessa finestra di 10 minuti; nella finestra successiva l'ordine
+    cambia → rotazione visibile nel tempo.
+    """
     serializer_class = ProfessionistaCardSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None
 
     def get_queryset(self):
+        import random
+        import time
+
         qs = list(Professionista.objects.featured_evidenza().select_related('categoria'))
-        qs.sort(key=lambda p: p.rating_medio, reverse=True)
-        return qs[:12]
+        seed = int(time.time()) // FEATURED_ROTATION_SECONDS
+        random.Random(seed).shuffle(qs)
+        return qs[:FEATURED_LIMIT]
 
 
 class ProfessionistaNearbyView(generics.ListAPIView):
