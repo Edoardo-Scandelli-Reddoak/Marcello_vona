@@ -66,6 +66,58 @@ class Promozione(models.Model):
         return promo if promo and promo.is_current else None
 
 
+class CodicePromo(models.Model):
+    """Codice referral inseribile dall'utente nella pagina abbonamenti.
+
+    Indipendente dalla Promozione generale: ha priorità su di essa al
+    checkout (se è attivo, il piano viene scontato con la sua percentuale e
+    si ignora lo sconto generale, mai sommati).
+    """
+    codice = models.SlugField(
+        max_length=50, unique=True,
+        help_text='Codice digitato dall\'utente (es. "BENVENUTO50"). Solo lettere/numeri/trattini, niente spazi.',
+    )
+    nome = models.CharField(
+        max_length=80, default='Codice referral',
+        help_text='Nome interno per ricordarti a cosa serve (visibile solo qui).',
+    )
+    sconto_percentuale = models.PositiveSmallIntegerField(
+        help_text='Percentuale di sconto applicata su qualunque piano (0-100).',
+    )
+    attivo = models.BooleanField(
+        default=True,
+        help_text='Disattiva per fermare il codice anche prima della scadenza.',
+    )
+    scadenza = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Opzionale: data di scadenza. Se vuoto, il codice non scade mai.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Codice referral'
+        verbose_name_plural = 'Codici referral'
+
+    def __str__(self):
+        return f'{self.codice} (-{self.sconto_percentuale}%)'
+
+    @property
+    def is_current(self) -> bool:
+        if not self.attivo:
+            return False
+        if self.scadenza and self.scadenza <= timezone.now():
+            return False
+        return True
+
+    @classmethod
+    def find_active(cls, codice: str) -> 'CodicePromo | None':
+        if not codice:
+            return None
+        promo = cls.objects.filter(codice__iexact=codice.strip()).first()
+        return promo if promo and promo.is_current else None
+
+
 class Abbonamento(models.Model):
     STATO_CHOICES = (
         ('in_attesa', 'In attesa di pagamento'),

@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Sparkles, ArrowRight, Loader2, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { abbonamentiApi, type PianoAbbonamento, type DiscountInfo } from '@/lib/api';
+import { abbonamentiApi, type PianoAbbonamento, type DiscountInfo, type CodicePromoValidation } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input';
 
 function formatEuro(prezzoEur: number, decimals = 2): string {
   return prezzoEur.toLocaleString('it-IT', {
@@ -50,6 +51,10 @@ export default function AbbonamentoPage() {
   const { user, loading: authLoading } = useAuth();
   const [piani, setPiani] = useState<PianoAbbonamento[]>([]);
   const [discount, setDiscount] = useState<DiscountInfo | null>(null);
+  const [promoCode, setPromoCode] = useState<CodicePromoValidation | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoInputError, setPromoInputError] = useState('');
+  const [promoInputLoading, setPromoInputLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutId, setCheckoutId] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -89,6 +94,30 @@ export default function AbbonamentoPage() {
     };
   }, [piani]);
 
+  const applyPromoInput = async () => {
+    const clean = promoInput.trim();
+    if (!clean) return;
+    setPromoInputError('');
+    setPromoInputLoading(true);
+    try {
+      const v = await abbonamentiApi.validatePromo(clean);
+      if (v.valido) {
+        setPromoCode(v);
+        setPromoInput('');
+      } else {
+        setPromoInputError('Codice non valido o scaduto.');
+      }
+    } catch {
+      setPromoInputError('Impossibile verificare il codice. Riprova.');
+    } finally {
+      setPromoInputLoading(false);
+    }
+  };
+
+  const removePromoCode = () => {
+    setPromoCode(null);
+  };
+
   const handlePurchase = async (piano: PianoAbbonamento) => {
     setError('');
     if (!authLoading && !user) {
@@ -97,7 +126,8 @@ export default function AbbonamentoPage() {
     }
     setCheckoutId(piano.id);
     try {
-      const res = await abbonamentiApi.checkout(piano.id);
+      const codice = promoCode?.valido ? promoCode.codice : undefined;
+      const res = await abbonamentiApi.checkout(piano.id, codice);
       window.location.href = res.redirect_url;
     } catch (e: any) {
       const msg = e.message || 'Errore durante il checkout.';
@@ -144,7 +174,76 @@ export default function AbbonamentoPage() {
       )}
       {error && <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-      {promoActive && (
+      {/* Banner sconto: priorità al codice link, fallback su Promo generale. */}
+      {promoCode?.valido ? (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#E91E8C]/30 bg-gradient-to-br from-[#E91E8C]/10 to-transparent p-5">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C] text-white">
+            <Gift className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-[#1A1A1A]">
+              Sconto del {promoCode.sconto_percentuale}% attivo col codice{' '}
+              <span className="rounded bg-[#E91E8C]/10 px-1.5 py-0.5 font-mono text-[#E91E8C]">
+                {promoCode.codice}
+              </span>
+            </h3>
+            <p className="mt-1 text-sm text-[#1A1A1A]/70">
+              Lo sconto si applica automaticamente su qualunque piano scegli.{' '}
+              <button
+                type="button"
+                onClick={removePromoCode}
+                className="text-[#E91E8C] underline hover:no-underline"
+              >
+                Rimuovi codice
+              </button>
+            </p>
+            {promoActive && (
+              <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Stai usando il codice referral: viene considerato <strong>solo questo sconto</strong>, non quello della promozione {discount?.nome || 'Early Bird'} attiva sulla pagina (i due non si sommano).
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-2xl border border-[#1A1A1A]/10 bg-white p-4">
+          <label htmlFor="promo-input" className="mb-2 block text-sm font-semibold text-[#1A1A1A]">
+            Hai un codice referral?
+          </label>
+          <div className="flex flex-wrap items-start gap-2">
+            <Input
+              id="promo-input"
+              type="text"
+              value={promoInput}
+              onChange={(e) => {
+                setPromoInput(e.target.value);
+                if (promoInputError) setPromoInputError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  applyPromoInput();
+                }
+              }}
+              placeholder="es. BENVENUTO50"
+              className="flex-1 min-w-[200px] uppercase"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={applyPromoInput}
+              disabled={!promoInput.trim() || promoInputLoading}
+            >
+              {promoInputLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Applica'}
+            </Button>
+          </div>
+          {promoInputError && (
+            <p className="mt-2 text-xs text-red-600">{promoInputError}</p>
+          )}
+        </div>
+      )}
+      {!promoCode?.valido && promoActive ? (
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#E91E8C]/30 bg-gradient-to-br from-[#E91E8C]/10 to-transparent p-5">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C] text-white">
             <Gift className="h-5 w-5" aria-hidden="true" />
@@ -162,7 +261,7 @@ export default function AbbonamentoPage() {
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="grid gap-6 md:grid-cols-2">
         {standard.length > 0 && (
@@ -174,6 +273,7 @@ export default function AbbonamentoPage() {
             onPurchase={handlePurchase}
             checkoutId={checkoutId}
             promoActive={promoActive}
+            linkDiscountPct={promoCode?.valido ? promoCode.sconto_percentuale : 0}
           />
         )}
         {evidenza.length > 0 && (
@@ -186,6 +286,7 @@ export default function AbbonamentoPage() {
             checkoutId={checkoutId}
             highlighted
             promoActive={promoActive}
+            linkDiscountPct={promoCode?.valido ? promoCode.sconto_percentuale : 0}
           />
         )}
       </div>
@@ -202,6 +303,8 @@ interface PianoBoxProps {
   checkoutId: number | null;
   highlighted?: boolean;
   promoActive?: boolean;
+  /** % sconto dal codice del link (?promo=…), 0 se assente/invalido. Vince sulla promo generale. */
+  linkDiscountPct?: number;
 }
 
 function PianoBox({
@@ -213,12 +316,19 @@ function PianoBox({
   checkoutId,
   highlighted = false,
   promoActive = false,
+  linkDiscountPct = 0,
 }: PianoBoxProps) {
   // Default selection: middle option (e.g. 30g for standard, 7g for evidenza)
   const defaultIndex = Math.floor((piani.length - 1) / 2);
   const [index, setIndex] = useState(defaultIndex);
   const piano = piani[Math.min(index, piani.length - 1)];
-  const effectiveDiscount = promoActive ? piano.sconto_percentuale : 0;
+  // Priorità: codice link > promo generale > nessuno sconto. Non si sommano.
+  const effectiveDiscount =
+    linkDiscountPct > 0
+      ? linkDiscountPct
+      : promoActive
+      ? piano.sconto_percentuale
+      : 0;
   const finalPrice = piano.prezzo_eur * (1 - effectiveDiscount / 100);
   const prezzoGiornaliero = piano.durata_giorni > 1 ? finalPrice / piano.durata_giorni : null;
   const isLoading = checkoutId === piano.id;
@@ -261,7 +371,7 @@ function PianoBox({
           )}
           {hasDiscount && (
             <span className="rounded-full bg-[#E91E8C]/10 px-2 py-0.5 font-semibold text-[#E91E8C]">
-              -{effectiveDiscount}% Early Bird
+              -{effectiveDiscount}% {linkDiscountPct > 0 ? 'sconto codice' : 'Early Bird'}
             </span>
           )}
         </div>

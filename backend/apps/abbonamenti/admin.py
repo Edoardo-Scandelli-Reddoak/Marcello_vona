@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import PianoAbbonamento, Abbonamento, Promozione
+from .models import PianoAbbonamento, Abbonamento, Promozione, CodicePromo
 
 
 @admin.register(PianoAbbonamento)
@@ -27,6 +27,25 @@ class PromozioneAdmin(ModelAdmin):
         return obj.is_current
     is_current.boolean = True
     is_current.short_description = 'In corso ora?'
+
+
+@admin.register(CodicePromo)
+class CodicePromoAdmin(ModelAdmin):
+    list_display = ('codice', 'nome', 'sconto_percentuale', 'attivo', 'scadenza', 'is_current')
+    list_filter = ('attivo',)
+    list_editable = ('attivo',)
+    search_fields = ('codice', 'nome')
+    readonly_fields = ('created_at',)
+    fieldsets = (
+        ('Codice referral', {'fields': ('codice', 'nome', 'sconto_percentuale')}),
+        ('Validità', {'fields': ('attivo', 'scadenza')}),
+        ('Metadati', {'fields': ('created_at',), 'classes': ('collapse',)}),
+    )
+
+    def is_current(self, obj):
+        return obj.is_current
+    is_current.boolean = True
+    is_current.short_description = 'Valido ora?'
 
 
 @admin.register(Abbonamento)

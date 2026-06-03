@@ -207,12 +207,16 @@ export interface DiscountInfo {
   nome: string;
 }
 
+export type CodicePromoValidation =
+  | { valido: false }
+  | { valido: true; codice: string; nome: string; sconto_percentuale: number; scadenza: string | null };
+
 export const abbonamentiApi = {
   piani: () => fetchApi('/piani/') as Promise<PianoAbbonamento[]>,
-  checkout: (piano_id: number) =>
+  checkout: (piano_id: number, codice_promo?: string) =>
     fetchApi('/abbonamenti/checkout/', {
       method: 'POST',
-      body: JSON.stringify({ piano_id }),
+      body: JSON.stringify(codice_promo ? { piano_id, codice_promo } : { piano_id }),
     }) as Promise<CheckoutResponse>,
   checkSession: (params: { session_id?: string; abbonamento_id?: number }) => {
     const q = new URLSearchParams();
@@ -222,6 +226,8 @@ export const abbonamentiApi = {
   },
   miei: () => fetchApi('/abbonamenti/me/') as Promise<Abbonamento[]>,
   discountInfo: () => fetchApi('/abbonamenti/discount-info/') as Promise<DiscountInfo>,
+  validatePromo: (codice: string) =>
+    fetchApi(`/promo/${encodeURIComponent(codice)}/`) as Promise<CodicePromoValidation>,
 };
 
 // Notifiche

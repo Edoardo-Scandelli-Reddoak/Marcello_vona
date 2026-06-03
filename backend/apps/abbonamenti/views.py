@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.professioniste.models import Professionista
-from .models import PianoAbbonamento, Abbonamento, Promozione
+from .models import PianoAbbonamento, Abbonamento, Promozione, CodicePromo
 from .serializers import PianoAbbonamentoSerializer, AbbonamentoSerializer
 
 logger = logging.getLogger(__name__)
@@ -89,13 +89,21 @@ class CheckoutCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Promozione globale attiva + sconto specifico del piano. Niente sconto
-        # se la promozione non è attiva o il piano ha sconto_percentuale = 0.
+        # Sconto: priorità al codice del link se presente e valido, altrimenti
+        # fallback sulla Promozione globale. I due non si sommano mai.
         amount_cents = piano.prezzo_centesimi
         discount_applied = False
-        if Promozione.get_current() is not None and piano.sconto_percentuale > 0:
+        discount_source = None
+        codice_input = (request.data.get('codice_promo') or '').strip()
+        codice_promo = CodicePromo.find_active(codice_input) if codice_input else None
+        if codice_promo and codice_promo.sconto_percentuale > 0:
+            amount_cents = amount_cents * (100 - codice_promo.sconto_percentuale) // 100
+            discount_applied = True
+            discount_source = 'codice'
+        elif Promozione.get_current() is not None and piano.sconto_percentuale > 0:
             amount_cents = amount_cents * (100 - piano.sconto_percentuale) // 100
             discount_applied = True
+            discount_source = 'promo_generale'
 
         abb = Abbonamento.objects.create(
             professionista=prof,
@@ -221,6 +229,29 @@ class DiscountInfoView(APIView):
             'attiva': True,
             'scadenza': promo.scadenza.isoformat(),
             'nome': promo.nome,
+        })
+
+
+class CodicePromoValidateView(APIView):
+    """Verifica un codice sconto da link `/?promo=<codice>/`.
+
+    Endpoint pubblico: il frontend lo chiama appena cattura il `promo` query
+    param, per decidere se mostrare il banner sconto. Ritorna 200+valido=False
+    se non esiste/non è attivo/è scaduto (così il client mostra solo se
+    valido, senza popup d'errore).
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, codice):
+        promo = CodicePromo.find_active(codice)
+        if promo is None:
+            return Response({'valido': False}, status=status.HTTP_200_OK)
+        return Response({
+            'valido': True,
+            'codice': promo.codice,
+            'nome': promo.nome,
+            'sconto_percentuale': promo.sconto_percentuale,
+            'scadenza': promo.scadenza.isoformat() if promo.scadenza else None,
         })
 
 
