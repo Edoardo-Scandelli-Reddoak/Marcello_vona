@@ -68,3 +68,36 @@ class Banner(models.Model):
 
     def __str__(self):
         return f'[{self.get_posizione_display()}] {self.titolo}'
+
+
+class HeroSettings(models.Model):
+    """Singleton: configurazione del banner principale (hero) della homepage.
+
+    Permette all'admin di sostituire titolo, sottotitolo e immagine di
+    sfondo senza dover passare per il codice. Tutti i campi sono opzionali:
+    se vuoti, il frontend usa i valori di default codificati.
+    """
+    titolo = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='Titolo della sezione hero (es. "Le migliori escort a 5 stelle"). Lascia vuoto per usare il default.',
+    )
+    sottotitolo = models.TextField(
+        blank=True, default='',
+        help_text='Frase descrittiva sotto al titolo. Lascia vuoto per usare il default.',
+    )
+    immagine = models.ImageField(
+        upload_to='hero/', blank=True, null=True,
+        help_text='Immagine di sfondo. Lascia vuoto per usare l\'immagine di default del sito.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Hero homepage'
+        verbose_name_plural = 'Hero homepage'
+
+    def __str__(self):
+        return f'Hero homepage (aggiornato {self.updated_at:%Y-%m-%d %H:%M})'
+
+    @classmethod
+    def get_current(cls) -> 'HeroSettings | None':
+        return cls.objects.first()
