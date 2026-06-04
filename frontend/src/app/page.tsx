@@ -11,7 +11,7 @@ import EscortCard from '@/components/EscortCard';
 import Carousel from '@/components/Carousel';
 import StarRating from '@/components/StarRating';
 import PromoBanner from '@/components/PromoBanner';
-import { escortApi, recensioniApi } from '@/lib/api';
+import { escortApi, recensioniApi, bannersApi, type HeroSettings } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function HomePage() {
@@ -23,10 +23,12 @@ export default function HomePage() {
   const [featured, setFeatured] = useState<any[]>([]);
   const [nearby, setNearby] = useState<any[]>([]);
   const [siteReviews, setSiteReviews] = useState<any[]>([]);
+  const [hero, setHero] = useState<HeroSettings | null>(null);
 
   useEffect(() => {
     escortApi.featured().then(setFeatured).catch(() => {});
     recensioniApi.sito().then(setSiteReviews).catch(() => {});
+    bannersApi.hero().then(setHero).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -55,22 +57,34 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-[#1A1A1A] py-24 text-white sm:py-32 md:py-40">
         <Image
-          src="/hero-home.png"
+          src={hero?.immagine || '/hero-home.png'}
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center"
+          // Mobile: image shiftata a destra (il soggetto resta visibile sul lato dx).
+          // Desktop: centrata.
+          className="object-cover object-right sm:object-center"
         />
-        {/* Overlay scuro a sx → trasparente a dx per mantenere leggibilità del testo
-            senza coprire il soggetto dell'immagine sulla destra. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1A]/85 via-[#1A1A1A]/55 to-transparent" />
+        {/* Mobile (default): gradiente verticale "a fascia" — trasparente in alto,
+            scuro al centro (dove sta il testo), trasparente in basso. Desktop (sm+):
+            gradiente orizzontale left→right (scuro a sx, soggetto visibile a dx).
+            Entrambe le varianti garantiscono leggibilità del testo. */}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1A1A1A]/75 to-transparent
+                     sm:bg-gradient-to-r sm:from-[#1A1A1A]/85 sm:via-[#1A1A1A]/55 sm:to-transparent"
+        />
         <div className="relative mx-auto max-w-7xl px-4 text-left">
           <h1 className="text-3xl font-bold tracking-tight drop-shadow-md sm:text-5xl md:text-6xl">
-            Le migliori <span className="text-[#E91E8C]">escort</span><br />a 5 stelle
+            {hero?.titolo?.trim() ? (
+              hero.titolo
+            ) : (
+              <>Le migliori <span className="text-[#E91E8C]">escort</span><br />a 5 stelle</>
+            )}
           </h1>
           <p className="mt-3 max-w-2xl text-base text-white/80 drop-shadow sm:mt-4 sm:text-lg">
-            Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!
+            {hero?.sottotitolo?.trim()
+              || 'Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!'}
           </p>
         </div>
       </section>

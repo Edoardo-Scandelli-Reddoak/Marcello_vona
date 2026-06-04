@@ -154,6 +154,13 @@ export const recensioniApi = {
   sito: () => fetchApi('/recensioni-sito/'),
 };
 
+// Hero homepage (impostazioni editabili dall'admin)
+export interface HeroSettings {
+  titolo: string;
+  sottotitolo: string;
+  immagine: string | null;
+}
+
 // Categorie & Tags
 export const categorieApi = {
   list: () => fetchApi('/categorie/'),
@@ -290,4 +297,5 @@ export const bannersApi = {
     if (!res.ok) throw new Error('Errore di rete');
     return res.json();
   },
+  hero: () => fetchApi('/hero/') as Promise<HeroSettings>,
 };
