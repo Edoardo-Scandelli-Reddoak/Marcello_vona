@@ -79,15 +79,23 @@ class HeroSettings(models.Model):
     """
     titolo = models.CharField(
         max_length=200, blank=True, default='',
-        help_text='Titolo della sezione hero (es. "Le migliori escort a 5 stelle"). Lascia vuoto per usare il default.',
+        help_text=(
+            'Titolo della sezione hero. Lascia vuoto per usare il default: '
+            '"Le migliori escort a 5 stelle" (con la parola "escort" evidenziata in rosa). '
+            'Se compili qui, il default viene sostituito col tuo testo (senza l\'evidenziato).'
+        ),
     )
     sottotitolo = models.TextField(
         blank=True, default='',
-        help_text='Frase descrittiva sotto al titolo. Lascia vuoto per usare il default.',
+        help_text=(
+            'Frase descrittiva sotto al titolo. Lascia vuoto per usare il default: '
+            '"Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni '
+            'e trova la escort perfetta per te in pochi click!".'
+        ),
     )
     immagine = models.ImageField(
         upload_to='hero/', blank=True, null=True,
-        help_text='Immagine di sfondo. Lascia vuoto per usare l\'immagine di default del sito.',
+        help_text='Immagine di sfondo della sezione hero. Lascia vuoto per usare l\'immagine di default (hero-home.png).',
     )
     updated_at = models.DateTimeField(auto_now=True)
 
