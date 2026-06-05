@@ -660,11 +660,11 @@ export default function RegistrazionePage() {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} />
-              Accetto la <a href="/privacy" className="text-[#E91E8C] hover:underline">Privacy Policy</a>
+              Accetto la <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#E91E8C] hover:underline">Privacy Policy</a>
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={termini} onChange={(e) => setTermini(e.target.checked)} />
-              Accetto i <a href="/termini" className="text-[#E91E8C] hover:underline">Termini e condizioni</a>
+              Accetto i <a href="/termini" target="_blank" rel="noopener noreferrer" className="text-[#E91E8C] hover:underline">Termini e condizioni</a>
             </label>
           </div>
           <div className="flex gap-3">

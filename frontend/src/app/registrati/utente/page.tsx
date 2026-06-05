@@ -141,8 +141,8 @@ export default function RegistratiUtentePage() {
             className="mt-1"
           />
           <span>
-            Accetto la <Link href="/privacy" className="text-[#E91E8C] hover:underline">Privacy Policy</Link> e i{' '}
-            <Link href="/termini" className="text-[#E91E8C] hover:underline">Termini e condizioni</Link>.
+            Accetto la <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#E91E8C] hover:underline">Privacy Policy</Link> e i{' '}
+            <Link href="/termini" target="_blank" rel="noopener noreferrer" className="text-[#E91E8C] hover:underline">Termini e condizioni</Link>.
           </span>
         </label>
         <Button
