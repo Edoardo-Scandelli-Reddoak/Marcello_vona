@@ -19,7 +19,7 @@ export default function PrivacyPage() {
           <p>
             Il titolare del trattamento dei dati personali è Directory Escort. Per qualsiasi
             richiesta relativa ai tuoi dati personali puoi contattarci all&apos;indirizzo
-            email <a href="mailto:supporto@directoryescort.it" className="text-[#E91E8C] hover:underline">supporto@directoryescort.it</a>.
+            email <a href="mailto:info.escortbella@gmail.com" className="text-[#E91E8C] hover:underline">info.escortbella@gmail.com</a>.
           </p>
         </section>
 
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           <p>
             In qualsiasi momento puoi richiedere accesso, rettifica, cancellazione,
             limitazione o portabilità dei tuoi dati scrivendo a{' '}
-            <a href="mailto:supporto@directoryescort.it" className="text-[#E91E8C] hover:underline">supporto@directoryescort.it</a>.
+            <a href="mailto:info.escortbella@gmail.com" className="text-[#E91E8C] hover:underline">info.escortbella@gmail.com</a>.
             Hai inoltre diritto a proporre reclamo al Garante Privacy.
           </p>
         </section>

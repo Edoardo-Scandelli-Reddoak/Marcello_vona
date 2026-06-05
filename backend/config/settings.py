@@ -280,7 +280,7 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001').strip()
 # In produzione settare EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
 # + EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_PORT, EMAIL_USE_TLS.
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@directoryescort.it')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'info.escortbella@gmail.com')
 
 # Unfold Admin
 UNFOLD = {

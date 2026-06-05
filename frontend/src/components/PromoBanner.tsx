@@ -18,7 +18,7 @@ const DEFAULT_FALLBACK: Banner = {
     'Raggiungi migliaia di utenti che ogni giorno cercano escort sulla nostra piattaforma. Contattaci per scoprire le opportunità pubblicitarie disponibili.',
   immagine: null,
   button_testo: 'Contattaci',
-  button_link: 'mailto:supporto@directoryescort.it',
+  button_link: 'mailto:info.escortbella@gmail.com',
 };
 
 export default function PromoBanner({ posizione, fallback }: PromoBannerProps) {

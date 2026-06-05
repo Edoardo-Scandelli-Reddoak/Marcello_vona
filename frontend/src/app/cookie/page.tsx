@@ -65,7 +65,7 @@ export default function CookiePage() {
           <h2 className="text-xl font-bold text-[#1A1A1A]">Contatti</h2>
           <p>
             Per qualsiasi richiesta sulla nostra politica dei cookie scrivi a{' '}
-            <a href="mailto:supporto@directoryescort.it" className="text-[#E91E8C] hover:underline">supporto@directoryescort.it</a>.
+            <a href="mailto:info.escortbella@gmail.com" className="text-[#E91E8C] hover:underline">info.escortbella@gmail.com</a>.
           </p>
         </section>
 

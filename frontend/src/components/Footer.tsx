@@ -48,20 +48,20 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a
-                  href="mailto:supporto@directoryescort.it"
+                  href="mailto:info.escortbella@gmail.com"
                   className="inline-flex items-center gap-2 transition-colors duration-200 ease-out hover:text-[#E91E8C]"
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
-                  supporto@directoryescort.it
+                  info.escortbella@gmail.com
                 </a>
               </li>
               <li>
                 <a
-                  href="tel:+390212345678"
+                  href="tel:+393520627731"
                   className="inline-flex items-center gap-2 transition-colors duration-200 ease-out hover:text-[#E91E8C]"
                 >
                   <Phone className="h-4 w-4" aria-hidden="true" />
-                  +39 02 1234 5678
+                  +39 352 062 7731
                 </a>
               </li>
             </ul>
