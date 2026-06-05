@@ -32,7 +32,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Legal — link interni alle pagine che embeddano Iubenda via iframe. */}
           <div>
             <h3 className="mb-3 font-semibold text-white">Legale</h3>
             <ul className="space-y-2 text-sm">

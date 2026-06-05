@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
@@ -33,6 +34,18 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={`${inter.className} antialiased`}>
+        {/* Iubenda Cookie Solution — banner consenso GDPR. La config si
+            riferisce al sito 14462765 su Iubenda; per modificare aspetto,
+            pulsanti, lingue, blocchi cookie, ecc. → dashboard Iubenda. */}
+        <Script id="iubenda-cs-config" strategy="beforeInteractive">
+          {`var _iub = _iub || [];
+_iub.csConfiguration = {"siteId":14462765,"cookiePolicyId":14462765,"lang":"it","storage":{"useSiteId":true}};`}
+        </Script>
+        <Script
+          src="https://cdn.iubenda.com/cs/iubenda_cs.js"
+          strategy="afterInteractive"
+          charSet="UTF-8"
+        />
         <Providers>
           <AgeGate />
           <div className="flex min-h-screen flex-col">
