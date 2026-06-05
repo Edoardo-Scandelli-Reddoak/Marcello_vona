@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, MapPin, Heart } from 'lucide-react';
-import { mediaUrl, preferitiApi } from '@/lib/api';
+import { Star, MapPin, Heart, MessageCircle, Phone } from 'lucide-react';
+import { mediaUrl, preferitiApi, escortApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
+
+const sanitizeForWa = (raw: string) => raw.replace(/[^\d]/g, '');
+const sanitizeForTel = (raw: string) => raw.replace(/[^\d+]/g, '');
 
 export interface EscortCardData {
   id: number;
@@ -79,6 +82,33 @@ export default function EscortCard({ escort }: EscortCardProps) {
     } finally {
       setFavLoading(false);
     }
+  };
+
+  const fetchTelefono = async (): Promise<string | null> => {
+    try {
+      const data = await escortApi.revealTelefono(p.slug);
+      return data?.telefono ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleScrivimi = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const num = await fetchTelefono();
+    if (!num) return;
+    const waNumber = sanitizeForWa(num);
+    const text = encodeURIComponent(`Ciao ${p.nome}, ti scrivo dal sito Directory Escort!`);
+    window.open(`https://wa.me/${waNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleChiamami = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const num = await fetchTelefono();
+    if (!num) return;
+    window.location.href = `tel:${sanitizeForTel(num)}`;
   };
 
   return (
@@ -160,6 +190,30 @@ export default function EscortCard({ escort }: EscortCardProps) {
           <span className="text-xs text-[#1A1A1A]/50">
             {p.numero_recensioni} {p.numero_recensioni === 1 ? 'recensione' : 'recensioni'}
           </span>
+        </div>
+
+        {/* Actions: Scrivimi (sx, WhatsApp) + Chiamami (dx, tel). Recuperano il
+            telefono via revealTelefono e aprono l'app corrispondente. e.preventDefault
+            + stopPropagation evitano la navigazione del Link genitore. */}
+        <div className="grid grid-cols-2 gap-2 border-t border-[#1A1A1A]/[0.06] px-3 py-2">
+          <button
+            type="button"
+            onClick={handleScrivimi}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#E91E8C] px-3 py-2 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-[#D11A7D]"
+            aria-label={`Scrivimi a ${p.nome} su WhatsApp`}
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Scrivimi
+          </button>
+          <button
+            type="button"
+            onClick={handleChiamami}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#E91E8C]/30 bg-white px-3 py-2 text-sm font-semibold text-[#E91E8C] transition-colors duration-200 ease-out hover:bg-[#E91E8C]/[0.06]"
+            aria-label={`Chiama ${p.nome}`}
+          >
+            <Phone className="h-4 w-4" aria-hidden="true" />
+            Chiamami
+          </button>
         </div>
       </div>
     </Link>

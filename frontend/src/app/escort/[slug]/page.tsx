@@ -188,7 +188,7 @@ export default function SchedaEscortPage() {
     LABEL_LEGACY[p.categoria_nome] ?? LABEL_LEGACY[p.categoria_slug] ?? p.categoria_nome;
 
   return (
-    <div className="min-h-screen bg-[#F8F7F5]">
+    <div className="min-h-screen bg-[#F8F7F5] pb-20 sm:pb-0">
       {/* Back button */}
       <div className="mx-auto max-w-7xl px-4 pt-6">
         <Link href="/escort" className="inline-flex items-center gap-1.5 text-sm text-[#1A1A1A]/50 transition-colors hover:text-[#1A1A1A]">
@@ -617,6 +617,34 @@ export default function SchedaEscortPage() {
         onClose={() => setAuthModalOpen(false)}
         message={`Per salvare ${profile?.nome ?? 'questa escort'} nei preferiti devi avere un account.`}
       />
+
+      {/* Barra fissa contatti — solo mobile. Sticky sul fondo del viewport
+          per tutta la lunghezza della pagina; la pagina ha pb-20 in cima per
+          non far coprire il contenuto in fondo. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-[#1A1A1A]/10 bg-white px-3 py-3 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] sm:hidden"
+        role="region"
+        aria-label="Contatti rapidi"
+      >
+        <button
+          type="button"
+          onClick={handleScrivimi}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#E91E8C] px-4 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-[#D11A7D]"
+          aria-label={`Scrivimi a ${p.nome} su WhatsApp`}
+        >
+          <MessageCircle className="h-5 w-5" aria-hidden="true" />
+          Scrivimi
+        </button>
+        <button
+          type="button"
+          onClick={handleChiamami}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E91E8C]/30 bg-white px-4 py-3 text-sm font-semibold text-[#E91E8C] transition-colors duration-200 ease-out hover:bg-[#E91E8C]/[0.06]"
+          aria-label={`Chiama ${p.nome}`}
+        >
+          <Phone className="h-5 w-5" aria-hidden="true" />
+          Chiamami
+        </button>
+      </div>
     </div>
   );
 }
