@@ -26,10 +26,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   return res.json();
 }
 
-async function fetchApiFormData(endpoint: string, formData: FormData) {
+async function fetchApiFormData(endpoint: string, formData: FormData, method: 'POST' | 'PATCH' | 'PUT' = 'POST') {
   const url = `${API_URL}${endpoint}`;
   const res = await fetch(url, {
-    method: 'POST',
+    method,
     credentials: 'include',
     body: formData,
   });
@@ -82,7 +82,7 @@ export const escortApi = {
   register: (formData: FormData) => fetchApiFormData('/escort/register/', formData),
   dashboard: () => fetchApi('/escort/dashboard/'),
   updateDashboard: (data: FormData) =>
-    fetchApiFormData('/escort/dashboard/', data),
+    fetchApiFormData('/escort/dashboard/', data, 'PATCH'),
   setMiTrovoQui: (indirizzo: string) =>
     fetchApi('/escort/dashboard/mi-trovo-qui/', {
       method: 'POST',

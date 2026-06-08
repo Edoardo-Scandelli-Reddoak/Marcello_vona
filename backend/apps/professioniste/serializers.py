@@ -152,6 +152,7 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
             'has_any_social', 'socials_unlocked', 'sblocco_social_prezzo_centesimi',
             'indirizzo_pubblico_aggiornato_at',
             'in_pausa', 'pausa_iniziata_at', 'prossima_pausa_disponibile_at',
+            'stato_approvazione',
             'is_favorite',
         )
 

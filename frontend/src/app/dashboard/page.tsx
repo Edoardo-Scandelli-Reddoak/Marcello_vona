@@ -121,7 +121,7 @@ export default function DashboardPage() {
     return <div className="py-20 text-center text-[#1A1A1A]/40">Scheda non trovata.</div>;
   }
 
-  const status = statusBadge[profilo.stato] || statusBadge.in_attesa;
+  const status = statusBadge[profilo.stato_approvazione] || statusBadge.in_attesa;
   const abbStandard = abbonamenti.find((a) => a.is_attivo && a.piano.tipo === 'standard');
   const abbEvidenza = abbonamenti.find((a) => a.is_attivo && a.piano.tipo === 'evidenza');
   const abbAttivo = abbStandard || abbEvidenza;
@@ -447,7 +447,11 @@ export default function DashboardPage() {
                         const updated = await escortApi.updateDashboard(fd);
                         setProfilo(updated);
                         setEditing(false);
-                      } catch {}
+                      } catch (e: any) {
+                        // Niente più catch muto: mostra l'errore così l'utente sa che il
+                        // salvataggio è fallito (prima sembrava ok ma non salvava niente).
+                        alert(`Errore nel salvataggio: ${e?.message || 'riprova tra un attimo'}`);
+                      }
                     }}
                     className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
                   >
