@@ -294,6 +294,26 @@ class ProfessionistaCreateSerializer(serializers.ModelSerializer):
             data_verifica=timezone.now(),
             **validated_data,
         )
+
+        # Geocoding automatico dell'indirizzo pubblico: senza questo l'escort
+        # non comparirebbe nella sezione "Vicino a te" della home finché non
+        # entra in dashboard e usa "Mi trovo qui". Best-effort: se Nominatim
+        # è down o l'indirizzo non è geolocalizzabile, lat/lng restano None
+        # e l'escort potrà ri-geocodificare manualmente più tardi.
+        from apps.professioniste.geocoding import geocode_address
+        parts = [
+            professionista.via, professionista.cap, professionista.citta,
+            professionista.provincia, professionista.nazione,
+        ]
+        geo = geocode_address(', '.join(p for p in parts if p))
+        if geo and geo.get('lat') is not None and geo.get('lng') is not None:
+            professionista.latitudine = geo['lat']
+            professionista.longitudine = geo['lng']
+            professionista.indirizzo_pubblico_aggiornato_at = timezone.now()
+            professionista.save(update_fields=[
+                'latitudine', 'longitudine', 'indirizzo_pubblico_aggiornato_at',
+            ])
+
         professionista.tags.set(tags)
         for i, img in enumerate(galleria_images):
             FotoProfessionista.objects.create(
