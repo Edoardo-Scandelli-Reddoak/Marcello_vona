@@ -133,6 +133,23 @@ export const escortApi = {
       throw new Error(err.detail || JSON.stringify(err));
     }
   },
+  // Gestione foto galleria — stessa struttura dei video.
+  listFoto: () => fetchApi('/escort/dashboard/foto/') as Promise<EscortFoto[]>,
+  addFoto: (file: File) => {
+    const fd = new FormData();
+    fd.append('immagine', file);
+    return fetchApiFormData('/escort/dashboard/foto/', fd) as Promise<EscortFoto>;
+  },
+  deleteFoto: async (id: number) => {
+    const res = await fetch(`${API_URL}/escort/dashboard/foto/${id}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok && res.status !== 204) {
+      const err = await res.json().catch(() => ({ detail: 'Errore di rete' }));
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+  },
 };
 
 export interface EscortVideo {
@@ -141,7 +158,14 @@ export interface EscortVideo {
   ordine: number;
 }
 
+export interface EscortFoto {
+  id: number;
+  immagine: string;
+  ordine: number;
+}
+
 export const MAX_VIDEO_PER_ESCORT = 5;
+export const MAX_FOTO_GALLERIA = 10;
 
 // Recensioni
 export const recensioniApi = {

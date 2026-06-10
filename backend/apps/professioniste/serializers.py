@@ -124,6 +124,9 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
     numero_recensioni = serializers.IntegerField(read_only=True)
     indirizzo_completo = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
+    # Telefono visibile solo al proprietario (dashboard). Per i visitatori
+    # pubblici resta vuoto: si rivela via endpoint dedicato che traccia i click.
+    telefono = serializers.SerializerMethodField()
     # Social: i link sono nascosti finché l'utente non paga lo sblocco.
     onlyfans_url = serializers.SerializerMethodField()
     instagram_url = serializers.SerializerMethodField()
@@ -153,6 +156,7 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
             'indirizzo_pubblico_aggiornato_at',
             'in_pausa', 'pausa_iniziata_at', 'prossima_pausa_disponibile_at',
             'stato_approvazione',
+            'telefono',
             'is_favorite',
         )
 
@@ -205,6 +209,15 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return obj.preferito_da.filter(user=request.user).exists()
+
+    def get_telefono(self, obj):
+        # Visibile solo al proprietario (la escort stessa via dashboard).
+        # Per i visitatori pubblici resta vuoto: il telefono si rivela via
+        # endpoint /api/escort/<slug>/telefono/ che traccia i click.
+        request = self.context.get('request')
+        if request and request.user.is_authenticated and obj.user_id == request.user.id:
+            return obj.telefono
+        return ''
 
     def get_indirizzo_completo(self, obj):
         parts = [obj.via, f'{obj.cap} {obj.citta} ({obj.provincia})']
@@ -367,10 +380,30 @@ class ProfessionistaUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         from django.utils import timezone
-        public_fields = {'via', 'cap', 'citta', 'provincia', 'nazione', 'latitudine', 'longitudine'}
-        if any(f in validated_data for f in public_fields):
+        address_fields = {'via', 'cap', 'citta', 'provincia', 'nazione'}
+        # Distinguo "campo presente nel PATCH" da "campo effettivamente cambiato"
+        # per evitare di ri-geocodificare quando l'escort salva senza toccare
+        # l'indirizzo. Verifico campo per campo.
+        address_changed = any(
+            f in validated_data and validated_data[f] != getattr(instance, f)
+            for f in address_fields
+        )
+        if address_changed:
             instance.indirizzo_pubblico_aggiornato_at = timezone.now()
-        return super().update(instance, validated_data)
+        updated = super().update(instance, validated_data)
+        if address_changed:
+            # Re-geocodifica best-effort: aggiorna lat/lng coerentemente col
+            # nuovo indirizzo. Se Nominatim non risponde o l'indirizzo è
+            # ambiguo, lat/lng restano invariati (l'escort vede comunque il
+            # nuovo testo e può usare "Mi trovo qui" se serve).
+            from apps.professioniste.geocoding import geocode_address
+            parts = [updated.via, updated.cap, updated.citta, updated.provincia, updated.nazione]
+            geo = geocode_address(', '.join(p for p in parts if p))
+            if geo and geo.get('lat') is not None and geo.get('lng') is not None:
+                updated.latitudine = geo['lat']
+                updated.longitudine = geo['lng']
+                updated.save(update_fields=['latitudine', 'longitudine'])
+        return updated
 
 
 class RevealTelefonoSerializer(serializers.ModelSerializer):

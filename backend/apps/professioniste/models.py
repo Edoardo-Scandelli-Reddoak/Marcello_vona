@@ -242,6 +242,7 @@ class FotoProfessionista(models.Model):
 # Numero massimo di video che ogni escort può caricare. Esposto come costante
 # pubblica per essere riutilizzato sia dai serializer che dal frontend.
 MAX_VIDEO_PER_ESCORT = 5
+MAX_FOTO_GALLERIA = 10
 
 
 class VideoProfessionista(models.Model):

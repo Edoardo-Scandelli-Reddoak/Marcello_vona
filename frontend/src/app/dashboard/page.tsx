@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
-import { escortApi, recensioniApi, abbonamentiApi, notificheApi, mediaUrl, MAX_VIDEO_PER_ESCORT, type Abbonamento, type Notifica, type EscortVideo } from '@/lib/api';
+import { escortApi, recensioniApi, abbonamentiApi, notificheApi, mediaUrl, MAX_VIDEO_PER_ESCORT, MAX_FOTO_GALLERIA, type Abbonamento, type Notifica, type EscortVideo, type EscortFoto } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
+import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Image as ImageIcon, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   in_attesa: { label: 'In attesa di verifica', className: 'bg-yellow-100 text-yellow-800' },
@@ -33,8 +33,12 @@ export default function DashboardPage() {
     bio: '',
     stato: '',
     telefono: '',
+    via: '',
+    cap: '',
     citta: '',
     zona: '',
+    provincia: '',
+    nazione: 'Italia',
     disponibilita: '',
     orari_tipo: '',
     orari_altro: '',
@@ -52,6 +56,12 @@ export default function DashboardPage() {
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoError, setVideoError] = useState('');
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Foto galleria
+  const [fotoList, setFotoList] = useState<EscortFoto[]>([]);
+  const [fotoUploading, setFotoUploading] = useState(false);
+  const [fotoError, setFotoError] = useState('');
+  const fotoInputRef = useRef<HTMLInputElement>(null);
 
   // Pausa & cancellazione
   const [pausaLoading, setPausaLoading] = useState(false);
@@ -88,8 +98,12 @@ export default function DashboardPage() {
               bio: data.bio,
               stato: data.stato || '',
               telefono: data.telefono || '',
+              via: data.via || '',
+              cap: data.cap || '',
               citta: data.citta,
               zona: data.zona || '',
+              provincia: data.provincia || '',
+              nazione: data.nazione || 'Italia',
               disponibilita: data.disponibilita || '',
               orari_tipo: data.orari_tipo || '',
               orari_altro: data.orari_altro || '',
@@ -102,6 +116,7 @@ export default function DashboardPage() {
               telegram_url: data.telegram_url || '',
             });
             setVideoList(Array.isArray(data.video) ? data.video : []);
+            setFotoList(Array.isArray(data.galleria) ? data.galleria : []);
             if (data.slug) {
               recensioniApi.list(data.slug).then(setRecensioni).catch(() => {});
             }
@@ -315,8 +330,45 @@ export default function DashboardPage() {
                   <Input value={editData.telefono} onChange={(e) => setEditData({ ...editData, telefono: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Città</Label>
-                  <Input value={editData.citta} onChange={(e) => setEditData({ ...editData, citta: e.target.value })} />
+                  <Label>Via / Indirizzo</Label>
+                  <Input
+                    value={editData.via}
+                    onChange={(e) => setEditData({ ...editData, via: e.target.value })}
+                    placeholder='Es. "Via Roma 42"'
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>CAP</Label>
+                    <Input
+                      value={editData.cap}
+                      onChange={(e) => setEditData({ ...editData, cap: e.target.value })}
+                      maxLength={5}
+                      placeholder="20121"
+                    />
+                  </div>
+                  <div>
+                    <Label>Città</Label>
+                    <Input value={editData.citta} onChange={(e) => setEditData({ ...editData, citta: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Provincia (sigla)</Label>
+                    <Input
+                      value={editData.provincia}
+                      onChange={(e) => setEditData({ ...editData, provincia: e.target.value.toUpperCase() })}
+                      maxLength={2}
+                      placeholder="MI"
+                    />
+                  </div>
+                  <div>
+                    <Label>Stato</Label>
+                    <Input
+                      value={editData.nazione}
+                      onChange={(e) => setEditData({ ...editData, nazione: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label>Zona (opzionale)</Label>
@@ -326,7 +378,7 @@ export default function DashboardPage() {
                     placeholder='Es. "Centro", "Navigli"'
                   />
                   <p className="mt-1 text-xs text-[#1A1A1A]/55">
-                    Mostrata accanto alla città sotto al tuo nome.
+                    Mostrata accanto alla città sotto al tuo nome. Se cambi via/cap/città/provincia, la posizione sulla mappa si aggiorna automaticamente al salvataggio.
                   </p>
                 </div>
                 <div>
@@ -544,6 +596,105 @@ export default function DashboardPage() {
         </div>
         {miTrovoError && (
           <p className="mt-3 text-sm text-red-600">{miTrovoError}</p>
+        )}
+      </div>
+
+      {/* Gestione foto galleria */}
+      <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
+            <ImageIcon className="h-5 w-5 text-[#E91E8C]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-[#1A1A1A]">La tua galleria foto</h3>
+            <p className="mt-1 text-sm text-[#1A1A1A]/60">
+              Puoi caricare fino a {MAX_FOTO_GALLERIA} foto nella tua galleria pubblica. La foto profilo (mostrata in cima alla scheda) si modifica separatamente.
+            </p>
+          </div>
+        </div>
+
+        {fotoError && (
+          <p className="mb-3 text-sm text-red-600">{fotoError}</p>
+        )}
+
+        {fotoList.length === 0 ? (
+          <p className="mb-3 text-sm text-[#1A1A1A]/50">Nessuna foto in galleria.</p>
+        ) : (
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {fotoList.map((f) => (
+              <div key={f.id} className="relative overflow-hidden rounded-xl border border-[#1A1A1A]/10 bg-[#F8F7F5]">
+                <div className="relative aspect-[3/4] w-full">
+                  <Image
+                    src={mediaUrl(f.immagine)}
+                    alt="Foto galleria"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                </div>
+                <button
+                  type="button"
+                  aria-label="Elimina foto"
+                  onClick={async () => {
+                    if (!confirm('Vuoi eliminare questa foto dalla galleria?')) return;
+                    try {
+                      await escortApi.deleteFoto(f.id);
+                      setFotoList((prev) => prev.filter((x) => x.id !== f.id));
+                    } catch (e: any) {
+                      setFotoError(e.message || 'Errore durante l\'eliminazione.');
+                    }
+                  }}
+                  className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-red-600 shadow-sm transition-colors hover:bg-white"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {fotoList.length < MAX_FOTO_GALLERIA && (
+          <div>
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setFotoError('');
+                setFotoUploading(true);
+                try {
+                  const created = await escortApi.addFoto(file);
+                  setFotoList((prev) => [...prev, created]);
+                } catch (err: any) {
+                  setFotoError(err.message || 'Caricamento fallito.');
+                } finally {
+                  setFotoUploading(false);
+                  if (fotoInputRef.current) fotoInputRef.current.value = '';
+                }
+              }}
+            />
+            <Button
+              onClick={() => fotoInputRef.current?.click()}
+              disabled={fotoUploading}
+              className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
+            >
+              {fotoUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Caricamento…
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" /> Aggiungi foto
+                </>
+              )}
+            </Button>
+            <p className="mt-2 text-xs text-[#1A1A1A]/55">
+              {fotoList.length}/{MAX_FOTO_GALLERIA} foto caricate.
+            </p>
+          </div>
         )}
       </div>
 

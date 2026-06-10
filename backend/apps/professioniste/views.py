@@ -11,6 +11,7 @@ from django.db import models
 from django.db.models import Case, Count, IntegerField, Value, When
 from .models import (
     Professionista, Categoria, Tag,
+    FotoProfessionista, MAX_FOTO_GALLERIA,
     VideoProfessionista, MAX_VIDEO_PER_ESCORT,
     PAUSA_COOLDOWN_DAYS,
 )
@@ -24,6 +25,7 @@ from .serializers import (
     TagSerializer,
     RevealTelefonoSerializer,
     ProvinciaSerializer,
+    FotoSerializer,
     VideoSerializer,
 )
 from .filters import ProfessionistaFilter
@@ -320,6 +322,55 @@ class VideoDeleteView(APIView):
         if not v:
             return Response(status=status.HTTP_404_NOT_FOUND)
         v.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FotoListCreateView(APIView):
+    """Gestione foto galleria dalla dashboard.
+
+    GET  → elenco delle proprie foto in galleria
+    POST → carica una nuova foto (multipart "immagine"). Rifiuta se sono già
+           MAX_FOTO_GALLERIA.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _profilo(self, request):
+        return Professionista.objects.filter(user=request.user).first()
+
+    def get(self, request):
+        prof = self._profilo(request)
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(FotoSerializer(prof.galleria.all(), many=True).data)
+
+    def post(self, request):
+        prof = self._profilo(request)
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        if prof.galleria.count() >= MAX_FOTO_GALLERIA:
+            return Response(
+                {'detail': f'Hai raggiunto il limite di {MAX_FOTO_GALLERIA} foto in galleria.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        immagine = request.FILES.get('immagine')
+        if not immagine:
+            return Response({'detail': 'File immagine mancante.'}, status=status.HTTP_400_BAD_REQUEST)
+        ordine = (prof.galleria.aggregate(m=models.Max('ordine'))['m'] or -1) + 1
+        f = FotoProfessionista.objects.create(professionista=prof, immagine=immagine, ordine=ordine)
+        return Response(FotoSerializer(f).data, status=status.HTTP_201_CREATED)
+
+
+class FotoDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        prof = Professionista.objects.filter(user=request.user).first()
+        if not prof:
+            return Response({'detail': 'Profilo non trovato'}, status=status.HTTP_404_NOT_FOUND)
+        f = prof.galleria.filter(pk=pk).first()
+        if not f:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        f.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
