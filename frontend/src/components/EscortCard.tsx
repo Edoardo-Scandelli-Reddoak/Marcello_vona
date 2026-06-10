@@ -99,7 +99,7 @@ export default function EscortCard({ escort }: EscortCardProps) {
     const num = await fetchTelefono();
     if (!num) return;
     const waNumber = sanitizeForWa(num);
-    const text = encodeURIComponent(`Ciao ${p.nome}, ti scrivo dal sito Directory Escort!`);
+    const text = encodeURIComponent(`Ciao ${p.nome}, ti scrivo dal sito Escort Bella!`);
     window.open(`https://wa.me/${waNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 

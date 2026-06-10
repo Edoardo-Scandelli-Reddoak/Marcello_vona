@@ -137,7 +137,7 @@ export default function SchedaEscortPage() {
     const num = await ensureTelefono();
     if (!num) return;
     const waNumber = sanitizeForWa(num);
-    const text = encodeURIComponent(`Ciao ${profile?.nome ?? ''}, ti scrivo dal sito Directory Escort!`);
+    const text = encodeURIComponent(`Ciao ${profile?.nome ?? ''}, ti scrivo dal sito Escort Bella!`);
     // Apre l'app WhatsApp se installata, altrimenti web.whatsapp.com
     window.open(`https://wa.me/${waNumber}?text=${text}`, '_blank', 'noopener,noreferrer');
   };

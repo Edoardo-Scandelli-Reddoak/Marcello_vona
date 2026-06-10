@@ -10,12 +10,56 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Directory Escort — Donna, Trans e Coppia',
+  // metadataBase serve a Next.js per generare URL assoluti per og:image e
+  // canonical. Senza, Next mette i path relativi che alcuni crawler
+  // (Google incluso) non interpretano correttamente.
+  metadataBase: new URL('https://escort-bella.it'),
+  title: {
+    default: 'Escort Bella — Le migliori escort vicino a te',
+    template: '%s — Escort Bella',
+  },
   description:
-    'Scopri le migliori escort vicino a te. Sfoglia le schede, leggi le recensioni e trova la escort perfetta per te in pochi click!',
+    'Escort Bella: la directory italiana di escort, trans e coppie. Sfoglia profili verificati, leggi recensioni reali e trova in pochi click la persona giusta nella tua zona.',
+  applicationName: 'Escort Bella',
+  keywords: ['escort', 'escort italia', 'directory escort', 'trans', 'coppie', 'donne', 'recensioni'],
+  alternates: {
+    canonical: '/',
+  },
   icons: {
-    icon: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-escort.svg', type: 'image/svg+xml' },
+    ],
     apple: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Escort Bella',
+    url: 'https://escort-bella.it',
+    locale: 'it_IT',
+    title: 'Escort Bella — Le migliori escort vicino a te',
+    description:
+      'La directory italiana di escort, trans e coppie. Profili verificati, recensioni reali, ricerca per zona.',
+    images: [
+      {
+        url: '/hero-home.png',
+        width: 2170,
+        height: 725,
+        alt: 'Escort Bella',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Escort Bella — Le migliori escort vicino a te',
+    description:
+      'La directory italiana di escort, trans e coppie. Profili verificati, recensioni reali.',
+    images: ['/hero-home.png'],
+  },
+  // Indica esplicitamente a Google che il sito è per adulti
+  // (utile per Safesearch e per non finire in penalizzazioni inattese).
+  other: {
+    rating: 'adult',
   },
 };
 

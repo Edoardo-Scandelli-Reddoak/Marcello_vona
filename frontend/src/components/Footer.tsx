@@ -69,7 +69,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 border-t border-white/10 pt-8 text-center text-sm text-white/40">
-          &copy; {new Date().getFullYear()} Directory Escort. Tutti i diritti riservati.
+          &copy; {new Date().getFullYear()} Escort Bella. Tutti i diritti riservati.
         </div>
       </div>
     </footer>

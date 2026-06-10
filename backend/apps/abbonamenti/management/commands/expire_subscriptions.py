@@ -85,7 +85,7 @@ class Command(BaseCommand):
                         f"Ciao {prof.nome},\n\n"
                         f"{messaggio}\n\n"
                         f"Rinnova ora: {frontend_url}/abbonamento\n\n"
-                        f"— Directory Escort"
+                        f"— Escort Bella"
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
