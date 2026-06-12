@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'apps.preferiti',
     'apps.sblocchi',
     'apps.notifiche',
+    'apps.analytics',
 ]
 
 MIDDLEWARE = [
@@ -287,4 +288,22 @@ UNFOLD = {
     "SITE_TITLE": "Directory Escort",
     "SITE_HEADER": "Directory Escort",
     "SITE_SYMBOL": "spa",
+    # Sidebar custom: oltre alle app, aggiungo il link alla pagina
+    # "Analisi dati" che è una view custom (non un ModelAdmin).
+    "SIDEBAR": {
+        "show_search": False,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Strumenti",
+                "items": [
+                    {
+                        "title": "Analisi dati",
+                        "icon": "analytics",
+                        "link": "/admin/analytics/",
+                    },
+                ],
+            },
+        ],
+    },
 }

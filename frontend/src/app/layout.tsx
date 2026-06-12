@@ -5,6 +5,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AgeGate from '@/components/AgeGate';
+import PageViewTracker from '@/components/PageViewTracker';
 import { Providers } from './providers';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -92,6 +93,7 @@ _iub.csConfiguration = {"siteId":14462765,"cookiePolicyId":14462765,"lang":"it",
         />
         <Providers>
           <AgeGate />
+          <PageViewTracker />
           <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-1">{children}</main>

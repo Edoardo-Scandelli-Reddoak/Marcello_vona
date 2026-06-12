@@ -3,7 +3,13 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve
 
+from apps.analytics.admin_views import analytics_dashboard
+
 urlpatterns = [
+    # Pagina dashboard custom dentro all'admin: deve venire PRIMA di
+    # `admin/` altrimenti il router include la cattura `admin.site.urls` e
+    # questa rotta non viene mai raggiunta.
+    path('admin/analytics/', analytics_dashboard, name='analytics_dashboard'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.accounts.urls')),
     path('api/', include('apps.professioniste.urls')),
@@ -13,6 +19,7 @@ urlpatterns = [
     path('api/', include('apps.preferiti.urls')),
     path('api/', include('apps.sblocchi.urls')),
     path('api/', include('apps.notifiche.urls')),
+    path('api/', include('apps.analytics.urls')),
     # In produzione su Railway non c'è un nginx davanti a Django, e
     # `django.conf.urls.static.static()` è no-op con DEBUG=False: per
     # questo usiamo direttamente la view `serve` che funziona sempre.

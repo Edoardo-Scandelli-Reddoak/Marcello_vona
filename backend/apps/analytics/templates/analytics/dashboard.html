@@ -1,0 +1,242 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Analisi dati | {{ site_title }}{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header }}</a></h1>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dash-wrap { padding: 1.25rem 1.5rem 3rem; max-width: 1400px; }
+    .dash-h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.25rem; color: #1A1A1A; }
+    .dash-sub { color: #666; margin: 0 0 1.5rem; font-size: 0.92rem; }
+    .dash-section-title { font-size: 1rem; font-weight: 700; color: #1A1A1A; margin: 1.8rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.85rem; }
+    .dash-card {
+      background: white;
+      border: 1px solid #e4e4e7;
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .dash-card-label { font-size: 0.75rem; color: #777; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+    .dash-card-value { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; line-height: 1.1; }
+    .dash-card-extra { font-size: 0.8rem; color: #888; margin-top: 0.35rem; }
+    .dash-card-accent .dash-card-value { color: #E91E8C; }
+    .dash-chart-box {
+      background: white;
+      border: 1px solid #e4e4e7;
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      margin-top: 0.75rem;
+    }
+    .dash-chart-title { font-size: 0.85rem; font-weight: 600; color: #555; margin: 0 0 0.5rem; }
+    .dash-table { width: 100%; border-collapse: collapse; }
+    .dash-table th, .dash-table td { padding: 0.6rem 0.5rem; text-align: left; font-size: 0.88rem; border-bottom: 1px solid #f0f0f0; }
+    .dash-table th { color: #555; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dash-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .dash-note { font-size: 0.78rem; color: #999; margin-top: 0.4rem; }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; Analisi dati
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="dash-wrap">
+  <h1 class="dash-h1">Analisi dati</h1>
+  <p class="dash-sub">Panoramica del sito, visite e fatturato. I dati sulle visite anonime iniziano dal momento dell'attivazione del tracciamento.</p>
+
+  {# ============================= VISITE ============================= #}
+  <h2 class="dash-section-title">Visite anonime</h2>
+  <div class="dash-grid">
+    <div class="dash-card dash-card-accent">
+      <div class="dash-card-label">Visite ultimi 30gg</div>
+      <div class="dash-card-value">{{ stats.visite.ultimi_30 }}</div>
+      <div class="dash-card-extra">{{ stats.visite.unique_30 }} visitatori unici</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Visite ultimi 7gg</div>
+      <div class="dash-card-value">{{ stats.visite.ultimi_7 }}</div>
+      <div class="dash-card-extra">{{ stats.visite.unique_7 }} visitatori unici</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Visite totali</div>
+      <div class="dash-card-value">{{ stats.visite.totali }}</div>
+      <div class="dash-card-extra">da inizio tracciamento</div>
+    </div>
+  </div>
+
+  <div class="dash-chart-box">
+    <h3 class="dash-chart-title">Visite per giorno (ultimi 30 giorni)</h3>
+    <canvas id="chart-visite" height="80"></canvas>
+  </div>
+
+  {% if stats.visite.top_pages %}
+  <div class="dash-chart-box">
+    <h3 class="dash-chart-title">Pagine più visitate (ultimi 30 giorni)</h3>
+    <table class="dash-table">
+      <thead><tr><th>Path</th><th style="text-align:right;">Visite</th></tr></thead>
+      <tbody>
+        {% for row in stats.visite.top_pages %}
+          <tr><td>{{ row.path }}</td><td class="num">{{ row.c }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {# ============================= UTENTI ============================= #}
+  <h2 class="dash-section-title">Utenti registrati</h2>
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-label">Totale</div>
+      <div class="dash-card-value">{{ stats.utenti.totali }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Escort</div>
+      <div class="dash-card-value">{{ stats.utenti.escort }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Clienti</div>
+      <div class="dash-card-value">{{ stats.utenti.clienti }}</div>
+    </div>
+    <div class="dash-card dash-card-accent">
+      <div class="dash-card-label">Nuovi ultimi 30gg</div>
+      <div class="dash-card-value">{{ stats.utenti.nuovi_30 }}</div>
+      <div class="dash-card-extra">{{ stats.utenti.nuovi_7 }} nei 7 giorni</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Nuove escort (30gg)</div>
+      <div class="dash-card-value">{{ stats.utenti.escort_nuove_30 }}</div>
+    </div>
+  </div>
+
+  {# ============================= SCHEDE ============================= #}
+  <h2 class="dash-section-title">Schede escort</h2>
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-label">Totali</div>
+      <div class="dash-card-value">{{ stats.schede.totali }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Approvate</div>
+      <div class="dash-card-value">{{ stats.schede.approvate }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">In attesa</div>
+      <div class="dash-card-value">{{ stats.schede.in_attesa }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Rifiutate</div>
+      <div class="dash-card-value">{{ stats.schede.rifiutate }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">In pausa</div>
+      <div class="dash-card-value">{{ stats.schede.in_pausa }}</div>
+    </div>
+    <div class="dash-card dash-card-accent">
+      <div class="dash-card-label">Click telefono (totali)</div>
+      <div class="dash-card-value">{{ stats.schede.click_telefono_tot }}</div>
+      <div class="dash-card-extra">somma su tutte le schede</div>
+    </div>
+  </div>
+
+  {# ============================= ABBONAMENTI ============================= #}
+  <h2 class="dash-section-title">Abbonamenti & fatturato</h2>
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-label">Standard attivi</div>
+      <div class="dash-card-value">{{ stats.abbonamenti.attivi_standard }}</div>
+    </div>
+    <div class="dash-card dash-card-accent">
+      <div class="dash-card-label">Evidenza attivi</div>
+      <div class="dash-card-value">{{ stats.abbonamenti.attivi_evidenza }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Fatturato 30gg</div>
+      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_30_eur|floatformat:2 }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Fatturato 90gg</div>
+      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_90_eur|floatformat:2 }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Fatturato totale</div>
+      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_tot_eur|floatformat:2 }}</div>
+      <div class="dash-card-extra">da inizio attività</div>
+    </div>
+  </div>
+
+  {# ============================= SBLOCCHI ============================= #}
+  <h2 class="dash-section-title">Sblocchi social (one-shot)</h2>
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-label">Sblocchi totali</div>
+      <div class="dash-card-value">{{ stats.sblocchi.totali }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Ricavato sblocchi</div>
+      <div class="dash-card-value">€ {{ stats.sblocchi.fatturato_eur|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  {# ============================= RECENSIONI ============================= #}
+  <h2 class="dash-section-title">Recensioni</h2>
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-label">Recensioni escort</div>
+      <div class="dash-card-value">{{ stats.recensioni.escort }}</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-label">Recensioni del sito</div>
+      <div class="dash-card-value">{{ stats.recensioni.sito }}</div>
+    </div>
+    <div class="dash-card dash-card-accent">
+      <div class="dash-card-label">Media stelle sito</div>
+      <div class="dash-card-value">{% if stats.recensioni.sito_media %}{{ stats.recensioni.sito_media }}{% else %}—{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var ctx = document.getElementById('chart-visite');
+    if (!ctx) return;
+    var labels = {{ serie_30_labels_json|safe }};
+    var values = {{ serie_30_values_json|safe }};
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Visite',
+          data: values,
+          borderColor: '#E91E8C',
+          backgroundColor: 'rgba(233, 30, 140, 0.12)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+          pointBackgroundColor: '#E91E8C',
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
+        }
+      }
+    });
+  })();
+</script>
+{% endblock %}
