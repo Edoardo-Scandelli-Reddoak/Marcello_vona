@@ -157,11 +157,13 @@ export default function HomePage() {
             </Button>
           </Link>
         </div>
+      </section>
 
-        {/* Banner pubblicitario subito sotto il CTA "Sei un'escort?" */}
-        <div className="mx-auto mt-4 max-w-4xl">
-          <PromoBanner posizione="homepage_after_cta" />
-        </div>
+      {/* Banner pubblicitario sotto al CTA "Sei un'escort?" — stessa larghezza
+          (max-w-7xl) degli altri 2 banner pubblicitari della home, così sono
+          tutti coerenti visivamente. */}
+      <section className="mx-auto max-w-7xl px-4 pt-8 sm:pt-10">
+        <PromoBanner posizione="homepage_after_cta" />
       </section>
 
       {/* Featured */}

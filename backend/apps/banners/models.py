@@ -38,7 +38,7 @@ class Banner(models.Model):
     posizione = models.CharField(
         max_length=50,
         choices=POSIZIONE_CHOICES,
-        db_index=True,
+        unique=True,
         verbose_name='Posizione',
         help_text='Dove viene mostrato il banner.',
     )

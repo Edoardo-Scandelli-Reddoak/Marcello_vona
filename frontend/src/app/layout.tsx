@@ -26,11 +26,11 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-escort.svg', type: 'image/svg+xml' },
-    ],
-    apple: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+    // SVG square (monogram EB su rosa brand). Tutti i browser moderni lo
+    // supportano; il vecchio default Next.js (src/app/favicon.ico) è stato
+    // rimosso per evitare che venisse mostrato al posto del brand.
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
   },
   openGraph: {
     type: 'website',

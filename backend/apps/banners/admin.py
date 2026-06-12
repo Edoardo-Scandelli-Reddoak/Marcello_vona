@@ -6,20 +6,30 @@ from .models import Banner, HeroSettings
 
 @admin.register(Banner)
 class BannerAdmin(ModelAdmin):
-    list_display = ('titolo', 'posizione', 'attivo', 'ordine', 'updated_at')
-    list_filter = ('posizione', 'attivo')
+    """Esattamente 3 banner fissi (uno per slot della homepage).
+
+    Non si aggiungono né si cancellano: si modificano contenuti e si
+    attivano/disattivano. La `posizione` è di sola lettura per evitare
+    di "spostare" un banner in uno slot diverso da quello in cui vive.
+    """
+    list_display = ('posizione_display', 'titolo', 'attivo', 'updated_at')
+    list_filter = ('attivo',)
     search_fields = ('titolo', 'descrizione')
-    list_editable = ('attivo', 'ordine')
-    readonly_fields = ('created_at', 'updated_at', 'immagine_preview')
+    list_editable = ('attivo',)
+    readonly_fields = ('posizione', 'created_at', 'updated_at', 'immagine_preview')
     fieldsets = (
+        ('Slot', {
+            'fields': ('posizione',),
+            'description': 'Lo slot del banner sulla homepage è fisso. Per nasconderlo, deseleziona "Attivo" qui sotto.',
+        }),
         ('Contenuto', {
-            'fields': ('posizione', 'titolo', 'descrizione', 'immagine', 'immagine_preview'),
+            'fields': ('titolo', 'descrizione', 'immagine', 'immagine_preview'),
         }),
         ('Bottone (opzionale)', {
             'fields': ('button_testo', 'button_link'),
         }),
         ('Pubblicazione', {
-            'fields': ('attivo', 'ordine'),
+            'fields': ('attivo',),
         }),
         ('Metadati', {
             'fields': ('created_at', 'updated_at'),
@@ -27,8 +37,18 @@ class BannerAdmin(ModelAdmin):
         }),
     )
 
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def posizione_display(self, obj):
+        return obj.get_posizione_display()
+    posizione_display.short_description = 'Posizione'
+
     def immagine_preview(self, obj):
-        if obj.immagine:
+        if obj and obj.immagine:
             return format_html('<img src="{}" style="max-width:480px;max-height:240px;border-radius:8px;" />', obj.immagine.url)
         return '-'
     immagine_preview.short_description = 'Anteprima immagine'
