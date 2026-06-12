@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
@@ -287,11 +288,11 @@ export default function RegistrazionePage() {
           </div>
           <div>
             <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={8} />
           </div>
           <div>
             <Label>Conferma password</Label>
-            <Input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} required />
+            <PasswordInput value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} required autoComplete="new-password" />
           </div>
           <Button onClick={handleStep1} disabled={loading} className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
             {loading ? 'Creazione...' : 'Continua'}

@@ -132,20 +132,25 @@ export default function HomePage() {
           </Button>
         </form>
 
-        {/* CTA — registrazione escort */}
-        <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E91E8C]/25 bg-gradient-to-r from-[#E91E8C]/[0.06] to-transparent px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
+        {/* CTA — registrazione escort. Layout:
+            - mobile (< sm): stacked verticalmente (icona+testo sopra, bottone sotto)
+            - sm in su: orizzontale, testo a sinistra (va a capo dentro al suo
+              blocco se manca spazio), bottone sempre fissato a destra grazie a
+              flex-shrink-0. */}
+        <div className="mx-auto mt-4 flex max-w-4xl flex-col gap-3 rounded-2xl border border-[#E91E8C]/25 bg-gradient-to-r from-[#E91E8C]/[0.08] to-transparent px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+          <div className="flex flex-1 items-start gap-3 sm:items-center">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
               <Sparkles className="h-5 w-5 text-[#E91E8C]" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-[#1A1A1A]">Sei un&apos;escort?</p>
-              <p className="text-sm text-[#1A1A1A]/65">
-                Crea la tua scheda in meno di 3 minuti e fatti trovare da nuovi clienti.
+              <p className="text-sm text-[#1A1A1A]/70">
+                Crea la tua scheda in meno di 3 minuti. Con il piano{' '}
+                <span className="font-semibold text-[#E91E8C]">Evidenza</span> appari in cima ai risultati e ti fai vedere prima da nuovi clienti.
               </p>
             </div>
           </div>
-          <Link href="/registrazione">
+          <Link href="/registrazione" className="flex-shrink-0">
             <Button className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
               Iscriviti ora
               <ArrowRight className="ml-2 h-4 w-4" />

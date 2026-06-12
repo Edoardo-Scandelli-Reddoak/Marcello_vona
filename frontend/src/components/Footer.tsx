@@ -68,10 +68,44 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-8 text-center text-sm text-white/40">
+        {/* Metodi di pagamento accettati */}
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 border-t border-white/10 pt-6 sm:flex-row sm:gap-4">
+          <span className="text-xs uppercase tracking-wide text-white/40">
+            Metodi di pagamento
+          </span>
+          <div className="flex items-center gap-2">
+            <VisaLogo />
+            <MastercardLogo />
+          </div>
+        </div>
+
+        <div className="mt-6 text-center text-sm text-white/40">
           &copy; {new Date().getFullYear()} Escort Bella. Tutti i diritti riservati.
         </div>
       </div>
     </footer>
+  );
+}
+
+function VisaLogo() {
+  return (
+    <div className="flex h-7 w-12 items-center justify-center rounded-md bg-white px-1.5 shadow-sm">
+      <svg viewBox="0 0 48 16" className="h-3.5 w-full" aria-label="Visa">
+        <text x="0" y="13" fontFamily="Helvetica, Arial, sans-serif" fontSize="14" fontWeight="900" fontStyle="italic" fill="#1A1F71">
+          VISA
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function MastercardLogo() {
+  return (
+    <div className="flex h-7 w-12 items-center justify-center rounded-md bg-white px-1.5 shadow-sm">
+      <svg viewBox="0 0 32 20" className="h-4 w-auto" aria-label="Mastercard">
+        <circle cx="12" cy="10" r="7" fill="#EB001B" />
+        <circle cx="20" cy="10" r="7" fill="#F79E1B" opacity="0.9" />
+      </svg>
+    </div>
   );
 }

@@ -363,6 +363,18 @@ class ProfessionistaUpdateSerializer(serializers.ModelSerializer):
             'onlyfans_url', 'instagram_url', 'facebook_url', 'tiktok_url', 'telegram_url',
         )
 
+    def to_internal_value(self, data):
+        # Quando l'escort deseleziona TUTTI i tag nella dashboard, il frontend
+        # invia `tags=""` in multipart per segnalare "lista vuota". DRF di
+        # default lo riceve come [''] e prova a convertirlo in pk → fallisce.
+        # Lo normalizzo qui a lista vuota così l'm2m set([]) cancella tutto.
+        if hasattr(data, 'getlist'):
+            tag_values = data.getlist('tags')
+            if tag_values == ['']:
+                data = data.copy()
+                data.setlist('tags', [])
+        return super().to_internal_value(data)
+
     def validate_onlyfans_url(self, value):
         return _normalize_social_url(value)
 

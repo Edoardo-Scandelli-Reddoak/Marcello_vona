@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PasswordInput from '@/components/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 
@@ -114,8 +115,7 @@ export default function RegistratiUtentePage() {
         </div>
         <div>
           <Label>Password</Label>
-          <Input
-            type="password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -125,8 +125,7 @@ export default function RegistratiUtentePage() {
         </div>
         <div>
           <Label>Conferma password</Label>
-          <Input
-            type="password"
+          <PasswordInput
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
             required

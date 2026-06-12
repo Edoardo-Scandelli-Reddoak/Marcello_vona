@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
-import { escortApi, recensioniApi, abbonamentiApi, notificheApi, mediaUrl, MAX_VIDEO_PER_ESCORT, MAX_FOTO_GALLERIA, type Abbonamento, type Notifica, type EscortVideo, type EscortFoto } from '@/lib/api';
+import { escortApi, recensioniApi, abbonamentiApi, notificheApi, tagsApi, mediaUrl, MAX_VIDEO_PER_ESCORT, MAX_FOTO_GALLERIA, type Abbonamento, type Notifica, type EscortVideo, type EscortFoto } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Image as ImageIcon, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
 
@@ -62,6 +62,22 @@ export default function DashboardPage() {
   const [fotoUploading, setFotoUploading] = useState(false);
   const [fotoError, setFotoError] = useState('');
   const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  // Tag (modificabili anche dopo la registrazione)
+  const [availableTags, setAvailableTags] = useState<Array<{ id: number; nome: string }>>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    tagsApi.list().then(setAvailableTags).catch(() => {});
+  }, []);
+
+  const toggleTag = (id: number) => {
+    setSelectedTagIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // Pausa & cancellazione
   const [pausaLoading, setPausaLoading] = useState(false);
@@ -117,6 +133,11 @@ export default function DashboardPage() {
             });
             setVideoList(Array.isArray(data.video) ? data.video : []);
             setFotoList(Array.isArray(data.galleria) ? data.galleria : []);
+            // I tag arrivano come array di {id, nome}. Pre-popolo il Set per
+            // mostrare i chip già attivi nel form di modifica.
+            if (Array.isArray(data.tags)) {
+              setSelectedTagIds(new Set(data.tags.map((t: any) => t.id)));
+            }
             if (data.slug) {
               recensioniApi.list(data.slug).then(setRecensioni).catch(() => {});
             }
@@ -371,6 +392,41 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div>
+                  <Label>Tag</Label>
+                  <p className="mb-2 text-xs text-[#1A1A1A]/55">
+                    Seleziona o deseleziona i tag che ti rappresentano. Aiutano gli utenti a trovarti.
+                  </p>
+                  {availableTags.length === 0 ? (
+                    <p className="text-xs text-[#1A1A1A]/40">Caricamento…</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.map((t) => {
+                        const active = selectedTagIds.has(t.id);
+                        return (
+                          <button
+                            type="button"
+                            key={t.id}
+                            onClick={() => toggleTag(t.id)}
+                            className={`rounded-full px-3 py-1.5 text-sm transition-colors duration-150 ease-out ${
+                              active
+                                ? 'bg-[#E91E8C] text-white ring-1 ring-[#E91E8C]'
+                                : 'bg-white text-[#1A1A1A]/70 ring-1 ring-[#1A1A1A]/15 hover:ring-[#E91E8C]/40 hover:text-[#1A1A1A]'
+                            }`}
+                            aria-pressed={active}
+                          >
+                            {t.nome}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedTagIds.size > 0 && (
+                    <p className="mt-2 text-xs text-[#1A1A1A]/50">
+                      {selectedTagIds.size} {selectedTagIds.size === 1 ? 'tag selezionato' : 'tag selezionati'}
+                    </p>
+                  )}
+                </div>
+                <div>
                   <Label>Zona (opzionale)</Label>
                   <Input
                     value={editData.zona}
@@ -495,6 +551,16 @@ export default function DashboardPage() {
                         if ((k === 'tariffa_30min' || k === 'tariffa_1ora') && !v) return;
                         fd.append(k, v);
                       });
+                      // Tag: FormData supporta più valori per la stessa chiave;
+                      // DRF PrimaryKeyRelatedField(many=True) li accetta come lista.
+                      // Se l'escort ha deselezionato tutto, mando comunque la chiave
+                      // (con valore "") per forzare lo svuotamento — altrimenti DRF
+                      // non vedrebbe il campo e i vecchi tag resterebbero.
+                      if (selectedTagIds.size === 0) {
+                        fd.append('tags', '');
+                      } else {
+                        selectedTagIds.forEach((id) => fd.append('tags', String(id)));
+                      }
                       try {
                         const updated = await escortApi.updateDashboard(fd);
                         setProfilo(updated);
