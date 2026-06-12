@@ -284,12 +284,17 @@ EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.conso
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'info.escortbella@gmail.com')
 
 # Unfold Admin
+# `SIDEBAR.navigation`, quando settato, SOSTITUISCE l'app_list auto-
+# generato di Django: bisogna quindi enumerare esplicitamente TUTTE le
+# voci che vogliamo vedere. Qui le raggruppo logicamente (Strumenti,
+# Utenti, Schede, Vendite, Engagement) e aggiungo il link alla pagina
+# custom /admin/analytics/ nella sezione Strumenti.
+from django.urls import reverse_lazy  # noqa: E402
+
 UNFOLD = {
     "SITE_TITLE": "Directory Escort",
     "SITE_HEADER": "Directory Escort",
     "SITE_SYMBOL": "spa",
-    # Sidebar custom: oltre alle app, aggiungo il link alla pagina
-    # "Analisi dati" che è una view custom (non un ModelAdmin).
     "SIDEBAR": {
         "show_search": False,
         "show_all_applications": True,
@@ -302,6 +307,42 @@ UNFOLD = {
                         "icon": "analytics",
                         "link": "/admin/analytics/",
                     },
+                ],
+            },
+            {
+                "title": "Utenti",
+                "items": [
+                    {"title": "Utenti", "icon": "person", "link": reverse_lazy("admin:accounts_user_changelist")},
+                ],
+            },
+            {
+                "title": "Schede & contenuto",
+                "items": [
+                    {"title": "Professionisti", "icon": "badge", "link": reverse_lazy("admin:professioniste_professionista_changelist")},
+                    {"title": "Categorie", "icon": "category", "link": reverse_lazy("admin:professioniste_categoria_changelist")},
+                    {"title": "Tag", "icon": "label", "link": reverse_lazy("admin:professioniste_tag_changelist")},
+                    {"title": "Banner", "icon": "image", "link": reverse_lazy("admin:banners_banner_changelist")},
+                    {"title": "Hero homepage", "icon": "panorama", "link": reverse_lazy("admin:banners_herosettings_changelist")},
+                ],
+            },
+            {
+                "title": "Vendite",
+                "items": [
+                    {"title": "Piani abbonamento", "icon": "card_membership", "link": reverse_lazy("admin:abbonamenti_pianoabbonamento_changelist")},
+                    {"title": "Abbonamenti", "icon": "receipt_long", "link": reverse_lazy("admin:abbonamenti_abbonamento_changelist")},
+                    {"title": "Sblocchi social", "icon": "lock_open", "link": reverse_lazy("admin:sblocchi_sbloccosocial_changelist")},
+                    {"title": "Promozioni", "icon": "percent", "link": reverse_lazy("admin:abbonamenti_promozione_changelist")},
+                    {"title": "Codici promo", "icon": "confirmation_number", "link": reverse_lazy("admin:abbonamenti_codicepromo_changelist")},
+                ],
+            },
+            {
+                "title": "Engagement",
+                "items": [
+                    {"title": "Recensioni escort", "icon": "star", "link": reverse_lazy("admin:reviews_recensione_changelist")},
+                    {"title": "Recensioni sito", "icon": "reviews", "link": reverse_lazy("admin:reviews_recensionesito_changelist")},
+                    {"title": "Preferiti", "icon": "favorite", "link": reverse_lazy("admin:preferiti_preferito_changelist")},
+                    {"title": "Notifiche", "icon": "notifications", "link": reverse_lazy("admin:notifiche_notifica_changelist")},
+                    {"title": "Visite raw", "icon": "visibility", "link": reverse_lazy("admin:analytics_pageview_changelist")},
                 ],
             },
         ],
