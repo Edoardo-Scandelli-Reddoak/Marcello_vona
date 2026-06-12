@@ -206,12 +206,12 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Banner pubblicitario sopra le recensioni */}
-      {siteReviews.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pb-4">
-          <PromoBanner posizione="homepage_before_reviews" />
-        </section>
-      )}
+      {/* Banner pubblicitario "sopra le recensioni" — mostrato sempre, anche
+          se la sezione recensioni è vuota (così rimangono i 3 banner attesi
+          dall'admin in homepage). */}
+      <section className="mx-auto max-w-7xl px-4 pb-4">
+        <PromoBanner posizione="homepage_before_reviews" />
+      </section>
 
       {/* Site Reviews */}
       {siteReviews.length > 0 && (
