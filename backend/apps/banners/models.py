@@ -31,6 +31,8 @@ def validate_button_link(value: str) -> None:
 class Banner(models.Model):
     POSIZIONE_CHOICES = (
         ('homepage_middle', 'Homepage — tra "Le più apprezzate" e "Vicino a te"'),
+        ('homepage_after_cta', 'Homepage — sotto al banner "Sei un\'escort?"'),
+        ('homepage_before_reviews', 'Homepage — sopra alla sezione "Cosa dicono di noi"'),
     )
 
     posizione = models.CharField(

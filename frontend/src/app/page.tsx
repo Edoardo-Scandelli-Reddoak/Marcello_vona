@@ -157,6 +157,11 @@ export default function HomePage() {
             </Button>
           </Link>
         </div>
+
+        {/* Banner pubblicitario subito sotto il CTA "Sei un'escort?" */}
+        <div className="mx-auto mt-4 max-w-4xl">
+          <PromoBanner posizione="homepage_after_cta" />
+        </div>
       </section>
 
       {/* Featured */}
@@ -198,6 +203,13 @@ export default function HomePage() {
           !geo.loading && <p className="text-[#1A1A1A]/40">Nessuna escort trovata.</p>
         )}
       </section>
+
+      {/* Banner pubblicitario sopra le recensioni */}
+      {siteReviews.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pb-4">
+          <PromoBanner posizione="homepage_before_reviews" />
+        </section>
+      )}
 
       {/* Site Reviews */}
       {siteReviews.length > 0 && (
