@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:professioniste_professionista_changelist' %}">Professionisti</a>
+    &rsaquo; Concedi abbonamento omaggio (bulk)
+  </div>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    .grant-wrap { max-width: 820px; padding: 1.5rem; }
+    .grant-card { background:#fff; border:1px solid #e4e4e7; border-radius:14px; padding:1.5rem; }
+    .grant-h1 { font-size:1.4rem; font-weight:700; margin:0 0 0.25rem; color:#1A1A1A; }
+    .grant-sub { color:#666; margin:0 0 1.2rem; font-size:0.92rem; }
+    .grant-targets { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.75rem 1rem; margin-bottom:1.2rem; max-height:200px; overflow:auto; }
+    .grant-targets ul { margin:0; padding-left:18px; font-size:0.88rem; }
+    .grant-row { margin-bottom: 1.2rem; }
+    .grant-row label { display:block; font-weight:600; color:#1A1A1A; margin-bottom: 0.35rem; }
+    .grant-row input, .grant-row select { width:100%; padding:0.6rem 0.7rem; border:1px solid #d4d4d8; border-radius:8px; font-size:0.95rem; }
+    .grant-help { color:#777; font-size:0.82rem; margin-top:0.25rem; }
+    .grant-buttons { display:flex; gap:0.6rem; align-items:center; margin-top:1.2rem; }
+    .grant-btn-primary { background:#E91E8C; color:#fff; padding:0.7rem 1.3rem; border:0; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.95rem; }
+    .grant-btn-primary:hover { background:#D11A7D; }
+    .grant-btn-cancel { color:#555; padding:0.7rem 0.9rem; text-decoration:none; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="grant-wrap">
+  <div class="grant-card">
+    <h1 class="grant-h1">Concedi abbonamento omaggio (bulk)</h1>
+    <p class="grant-sub">Applichi lo stesso piano e durata a tutte le schede selezionate. La durata si <em>somma</em> a un eventuale abbonamento attivo già presente, non lo sostituisce.</p>
+
+    <div class="grant-targets">
+      <strong>{{ queryset|length }} scheda/e selezionate:</strong>
+      <ul>
+        {% for prof in queryset %}<li>{{ prof.nome }}{% if prof.citta %} — {{ prof.citta }}{% endif %}</li>{% endfor %}
+      </ul>
+    </div>
+
+    <form method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="{{ action }}">
+      {% for obj in queryset %}<input type="hidden" name="_selected_action" value="{{ obj.pk }}">{% endfor %}
+      <input type="hidden" name="apply" value="1">
+      <input type="hidden" name="select_across" value="0">
+      <input type="hidden" name="index" value="0">
+
+      <div class="grant-row">
+        <label for="id_piano">Piano</label>
+        {{ form.piano }}
+        {% if form.piano.help_text %}<p class="grant-help">{{ form.piano.help_text }}</p>{% endif %}
+      </div>
+      <div class="grant-row">
+        <label for="id_durata_giorni">Durata (giorni)</label>
+        {{ form.durata_giorni }}
+        {% if form.durata_giorni.help_text %}<p class="grant-help">{{ form.durata_giorni.help_text }}</p>{% endif %}
+      </div>
+      <div class="grant-buttons">
+        <button type="submit" class="grant-btn-primary">Conferma per tutti</button>
+        <a href="{% url 'admin:professioniste_professionista_changelist' %}" class="grant-btn-cancel">Annulla</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
