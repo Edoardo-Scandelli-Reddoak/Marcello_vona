@@ -154,7 +154,34 @@ export default function DashboardPage() {
   }
 
   if (!profilo) {
-    return <div className="py-20 text-center text-[#1A1A1A]/40">Scheda non trovata.</div>;
+    // Caso tipico: l'admin ha creato l'utente con user_type='escort' ma non
+    // ha ancora collegato una scheda Professionista, oppure la registrazione
+    // step 2 (creazione scheda) è fallita. Senza Professionista la dashboard
+    // non ha nulla da mostrare — diamo un messaggio chiaro + azione.
+    return (
+      <div className="mx-auto max-w-xl px-4 py-16 text-center">
+        <div className="rounded-2xl border border-[#E91E8C]/20 bg-white p-8 shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#E91E8C]/10">
+            <AlertCircle className="h-6 w-6 text-[#E91E8C]" />
+          </div>
+          <h1 className="text-xl font-bold text-[#1A1A1A]">La tua scheda non è ancora pronta</h1>
+          <p className="mt-3 text-sm text-[#1A1A1A]/65">
+            Il tuo account esiste ma la scheda escort collegata non è stata trovata.
+            Completa la registrazione per crearla, oppure contatta l&apos;amministratore se pensi
+            sia un errore.
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button
+              onClick={() => router.push('/registrazione')}
+              className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
+            >
+              Completa registrazione
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/')}>Torna alla home</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const status = statusBadge[profilo.stato_approvazione] || statusBadge.in_attesa;

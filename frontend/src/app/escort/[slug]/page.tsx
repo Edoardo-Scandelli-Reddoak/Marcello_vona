@@ -200,8 +200,14 @@ export default function SchedaEscortPage() {
       <div className="mx-auto max-w-7xl px-4 py-6">
         <div className="grid gap-8 lg:grid-cols-5">
 
-          {/* Left Column - 3/5 */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* Left Column - 3/5.
+              `min-w-0` è CRUCIALE: senza, il default `min-width: auto` su grid
+              child fa sì che la colonna si espanda per contenere figli più
+              larghi (la strip thumbnails con flex-shrink-0). Risultato: tutta
+              la pagina su mobile guadagna uno scroll orizzontale storto.
+              Con min-w-0 la colonna rispetta i 1fr/col-span-3 e la strip
+              scrolla SOLO al suo interno (grazie a overflow-x-auto). */}
+          <div className="min-w-0 lg:col-span-3 space-y-6">
             {/* Gallery */}
             <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
               {/* Main image — always vertical/portrait */}
@@ -218,9 +224,10 @@ export default function SchedaEscortPage() {
                 </div>
               </div>
 
-              {/* Thumbnails row */}
+              {/* Thumbnails row — `min-w-0` anche qui per cintura+bretelle,
+                  così se in futuro il wrapper esterno cambia non si rompe. */}
               {allImages.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto px-3 pb-3">
+                <div className="flex min-w-0 gap-2 overflow-x-auto px-3 pb-3">
                   {allImages.map((img, i) => (
                     <button
                       key={i}

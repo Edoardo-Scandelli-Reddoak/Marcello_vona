@@ -27,7 +27,7 @@ const steps = [
 
 export default function RegistrazionePage() {
   const router = useRouter();
-  const { register } = useAuth();
+  const { user, register } = useAuth();
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,16 @@ export default function RegistrazionePage() {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [error]);
+
+  // Recupero post step-1 fallito: se l'utente è già loggato come escort,
+  // lo step 0 (crea account) gli darebbe "email già usata" e basta. Salto
+  // direttamente allo step 1 così può completare la scheda senza creare
+  // un secondo account.
+  useEffect(() => {
+    if (user?.user_type === 'escort' && step === 0) {
+      setStep(1);
+    }
+  }, [user, step]);
 
   // Step 1
   const [email, setEmail] = useState('');

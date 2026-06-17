@@ -6,11 +6,25 @@ from .models import User
 
 
 class CustomUserCreationForm(UserCreationForm):
-    # Il modello User ha email come USERNAME_FIELD (unique) + un user_type.
-    # Il form di default non espone questi campi → 500 al salvataggio.
+    """Form di creazione utente da admin.
+
+    Espone solo email + user_type + password (NO username): il frontend
+    registra gli utenti con `username = email` per consistenza, e qui
+    facciamo lo stesso così non ci sono utenti con username diverso
+    dall'email che possono confondere il flow di login/lookup.
+    """
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('email', 'username', 'user_type')
+        fields = ('email', 'user_type')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Allineiamo username all'email — stesso pattern del RegisterSerializer
+        # del frontend. AbstractUser richiede username unique non-null.
+        user.username = user.email
+        if commit:
+            user.save()
+        return user
 
 
 class CustomUserChangeForm(UserChangeForm):
@@ -29,7 +43,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'user_type', 'password1', 'password2'),
+            'fields': ('email', 'user_type', 'password1', 'password2'),
         }),
     )
     fieldsets = (
