@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from django.urls import reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from .models import User
@@ -62,10 +61,14 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
         Unfold non renderizza il link "Change password" nei classici object
         tools, quindi lo mostriamo qui inline dentro al fieldset "Email/etc".
+        Costruisco l'URL come stringa invece di usare reverse() perché
+        BaseUserAdmin hardcoda il nome URL come "auth_user_password_change"
+        indipendentemente dall'app del modello — comportamento confuso che
+        in passato ha già causato 500 (NoReverseMatch).
         """
         if not obj or not obj.pk:
             return format_html('<span style="color:#888;">Salva l\'utente per poterne cambiare la password.</span>')
-        url = reverse('admin:accounts_user_password_change', args=[obj.pk])
+        url = f'/admin/accounts/user/{obj.pk}/password/'
         return format_html(
             '<a href="{}" class="button" style="background:#E91E8C;color:#fff;'
             'padding:6px 14px;border-radius:6px;text-decoration:none;'
