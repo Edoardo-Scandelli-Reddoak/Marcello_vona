@@ -166,6 +166,18 @@ export default function HomePage() {
         <PromoBanner posizione="homepage_after_cta" />
       </section>
 
+      {/* Paragrafo descrittivo visibile per indicizzazione SEO.
+          I crawler considerano il testo on-page con peso maggiore rispetto
+          alle sole meta tag — questo `<p>` serve a far indicizzare meglio
+          il sito su Google per le query rilevanti. */}
+      <section className="mx-auto max-w-7xl px-4 pt-8 sm:pt-10">
+        <p className="text-center text-sm text-[#1A1A1A]/70 sm:text-base">
+          Escort Bella è la directory italiana di escort, trans e coppie.
+          Sfoglia profili verificati, leggi recensioni reali e trova la persona
+          giusta nella tua zona in pochi click.
+        </p>
+      </section>
+
       {/* Featured */}
       {featured.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-10 sm:py-12 md:py-16">

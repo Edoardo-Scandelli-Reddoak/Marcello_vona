@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: '%s — Escort Bella',
   },
   description:
-    'Escort Bella: la directory italiana di escort, trans e coppie. Sfoglia profili verificati, leggi recensioni reali e trova in pochi click la persona giusta nella tua zona.',
+    'Escort Bella è la directory italiana di escort, trans e coppie. Sfoglia profili verificati, leggi recensioni reali e trova la persona giusta nella tua zona in pochi click.',
   applicationName: 'Escort Bella',
   keywords: ['escort', 'escort italia', 'directory escort', 'trans', 'coppie', 'donne', 'recensioni'],
   alternates: {
