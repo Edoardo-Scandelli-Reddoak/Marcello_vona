@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.urls import reverse
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from .models import User
 
@@ -46,10 +48,29 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
             'fields': ('email', 'user_type', 'password1', 'password2'),
         }),
     )
+    readonly_fields = ('cambia_password',)
     fieldsets = (
-        (None, {'fields': ('email', 'username', 'password')}),
+        (None, {'fields': ('email', 'username', 'password', 'cambia_password')}),
         ('Informazioni personali', {'fields': ('first_name', 'last_name')}),
         ('Tipologia', {'fields': ('user_type',)}),
         ('Permessi', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Date importanti', {'fields': ('last_login', 'date_joined')}),
     )
+
+    def cambia_password(self, obj):
+        """Bottone rosa per andare alla form di reset password.
+
+        Unfold non renderizza il link "Change password" nei classici object
+        tools, quindi lo mostriamo qui inline dentro al fieldset "Email/etc".
+        """
+        if not obj or not obj.pk:
+            return format_html('<span style="color:#888;">Salva l\'utente per poterne cambiare la password.</span>')
+        url = reverse('admin:accounts_user_password_change', args=[obj.pk])
+        return format_html(
+            '<a href="{}" class="button" style="background:#E91E8C;color:#fff;'
+            'padding:6px 14px;border-radius:6px;text-decoration:none;'
+            'display:inline-block;font-weight:600;">'
+            '🔑 Imposta nuova password</a>',
+            url,
+        )
+    cambia_password.short_description = 'Reset password'
