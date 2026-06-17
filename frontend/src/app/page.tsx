@@ -58,7 +58,7 @@ export default function HomePage() {
       <section className="relative overflow-hidden bg-[#1A1A1A] py-24 text-white sm:py-32 md:py-40">
         <Image
           src={hero?.immagine || '/hero-home.png'}
-          alt=""
+          alt="Escort Bella - directory italiana di escort, trans e coppie"
           fill
           priority
           sizes="100vw"

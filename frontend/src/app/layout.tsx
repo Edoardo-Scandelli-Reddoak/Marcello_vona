@@ -27,11 +27,11 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
-    // Favicon brand fornita (public/favicon-escort.svg). Il vecchio default
-    // Next.js (src/app/favicon.ico) è stato rimosso così questa diventa
-    // l'unica icona effettivamente servita.
-    icon: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/favicon-escort.svg', type: 'image/svg+xml' }],
+    // Favicon brand finale (public/faviconescortfinale.svg) — versione
+    // quadrata 221×221, sostituisce la vecchia favicon-escort.svg che era
+    // rettangolare (221×124) e veniva schiacciata nel tab del browser.
+    icon: [{ url: '/faviconescortfinale.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/faviconescortfinale.svg', type: 'image/svg+xml' }],
   },
   openGraph: {
     type: 'website',
@@ -76,8 +76,64 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // JSON-LD strutturato per Google: Organization (entity del brand) +
+  // WebSite (con SearchAction per il sitelinks-searchbox nelle SERP).
+  // Renderizzato come <script type="application/ld+json"> via
+  // dangerouslySetInnerHTML — pattern consigliato da Next.js per i dati
+  // strutturati. Va dentro a `<head>` (Next.js lo issa lì in automatico
+  // quando è un <script type="application/ld+json"> nel layout).
+  const jsonLd = {
+    '@context': 'https://schema.org/',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://escort-bella.it/#organization',
+        name: 'Escort Bella',
+        url: 'https://escort-bella.it/',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://escort-bella.it/faviconescortfinale.svg',
+        },
+        contactPoint: {
+          '@type': 'ContactPoint',
+          telephone: '+39-352-062-7731',
+          email: 'info.escortbella@gmail.com',
+          contactType: 'customer service',
+          areaServed: 'IT',
+          availableLanguage: 'Italian',
+        },
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://escort-bella.it/#website',
+        url: 'https://escort-bella.it/',
+        name: 'Escort Bella',
+        description:
+          'La directory italiana di escort, trans e coppie. Profili verificati, recensioni reali, ricerca per zona.',
+        publisher: { '@id': 'https://escort-bella.it/#organization' },
+        inLanguage: 'it-IT',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: 'https://escort-bella.it/escort?q={search_term_string}',
+          },
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="it">
+      <head>
+        {/* JSON-LD dati strutturati — letti da Google per knowledge panel,
+            sitelinks-searchbox, e rich results. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${inter.className} antialiased`}>
         {/* Iubenda Cookie Solution — banner consenso GDPR. La config si
             riferisce al sito 14462765 su Iubenda; per modificare aspetto,
