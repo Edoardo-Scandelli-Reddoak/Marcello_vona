@@ -175,6 +175,13 @@ export const recensioniApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  // PATCH /api/recensioni/<id>/risposta/ — visibile sotto la recensione.
+  // testo vuoto = cancella la risposta.
+  rispondi: (id: number, testo: string) =>
+    fetchApi(`/recensioni/${id}/risposta/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ risposta_escort: testo }),
+    }),
   sito: () => fetchApi('/recensioni-sito/'),
 };
 

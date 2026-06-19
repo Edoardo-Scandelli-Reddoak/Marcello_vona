@@ -1025,6 +1025,18 @@ export default function DashboardPage() {
             </div>
             <StarRating value={r.stelle} readonly size="sm" />
             <p className="mt-1 text-sm text-[#1A1A1A]/70">{r.testo}</p>
+            <ReviewReply
+              recensione={r}
+              profiloNome={profilo?.nome}
+              profiloSlug={profilo?.slug}
+              onUpdated={async () => {
+                if (!profilo?.slug) return;
+                try {
+                  const updated = await recensioniApi.list(profilo.slug);
+                  setRecensioni(updated);
+                } catch {}
+              }}
+            />
           </div>
         ))}
         {recensioni.length === 0 && (
@@ -1032,5 +1044,98 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function ReviewReply({
+  recensione,
+  profiloNome,
+  profiloSlug,
+  onUpdated,
+}: {
+  recensione: any;
+  profiloNome?: string;
+  profiloSlug?: string;
+  onUpdated: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(recensione.risposta_escort || '');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (saving || !profiloSlug) return;
+    setSaving(true);
+    try {
+      await recensioniApi.rispondi(recensione.id, draft.trim());
+      await onUpdated();
+      setEditing(false);
+    } catch {
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-3 rounded-xl border border-[#E91E8C]/30 bg-white p-3">
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Scrivi la tua risposta..."
+          rows={3}
+          maxLength={1500}
+          className="text-sm"
+        />
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(false);
+              setDraft(recensione.risposta_escort || '');
+            }}
+            disabled={saving}
+            className="text-xs font-medium text-[#1A1A1A]/60 hover:underline disabled:opacity-50"
+          >
+            Annulla
+          </button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={submit}
+            disabled={saving}
+            className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
+          >
+            {saving ? 'Salvataggio...' : (recensione.risposta_escort ? 'Aggiorna' : 'Pubblica')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {recensione.risposta_escort && (
+        <div className="mt-3 rounded-xl border-l-2 border-[#E91E8C] bg-[#E91E8C]/[0.04] p-3">
+          <p className="text-xs font-semibold text-[#E91E8C]">
+            La tua risposta {profiloNome ? `(${profiloNome})` : ''}
+            {recensione.risposta_at && (
+              <span className="ml-2 font-normal text-[#1A1A1A]/40">
+                {new Date(recensione.risposta_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-[#1A1A1A]/80">{recensione.risposta_escort}</p>
+        </div>
+      )}
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-xs font-medium text-[#E91E8C] hover:underline"
+        >
+          {recensione.risposta_escort ? 'Modifica la tua risposta' : 'Rispondi'}
+        </button>
+      </div>
+    </>
   );
 }

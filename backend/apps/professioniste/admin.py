@@ -22,41 +22,62 @@ class VideoInline(TabularInline):
 class _GrantAbbonamentoForm(forms.Form):
     """Form usato da admin per creare un abbonamento "omaggio" — attivo
     subito, senza pagamento Stripe, di durata arbitraria.
+
+    Espone direttamente la scelta `tipo` (Standard vs Evidenza): l'admin
+    non deve cercare un "piano" specifico, sceglie semplicemente la
+    visibilità e quanti giorni dura.
     """
-    piano = forms.ModelChoiceField(
-        queryset=None,  # popolato in __init__ per evitare query a import-time
-        label='Piano',
-        help_text='Standard = visibilità base · Evidenza = in cima ai risultati',
+    TIPO_CHOICES = (
+        ('evidenza', 'Evidenza — appare in cima ai risultati ("Le più apprezzate")'),
+        ('standard', 'Standard — visibilità base (compare nelle liste, non in evidenza)'),
+    )
+    tipo = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        widget=forms.RadioSelect,
+        initial='evidenza',
+        label='Tipo abbonamento',
     )
     durata_giorni = forms.IntegerField(
         min_value=1, max_value=3650, initial=30,
         label='Durata (giorni)',
-        help_text='Esempi: 7 (settimana) · 30 (mese) · 90 (trimestre) · 180 (semestre) · 365 (anno)',
+        help_text='Esempi: 1 (test) · 7 (settimana) · 30 (mese) · 90 (trimestre) · 180 (semestre) · 365 (anno).',
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from apps.abbonamenti.models import PianoAbbonamento
-        self.fields['piano'].queryset = (
-            PianoAbbonamento.objects.filter(attivo=True).order_by('tipo', 'durata_giorni')
-        )
 
-
-def _grant_subscription(professionista, piano, durata_giorni: int):
-    """Crea un Abbonamento attivo per `professionista` con la durata richiesta.
+def _grant_subscription(professionista, tipo: str, durata_giorni: int):
+    """Crea un Abbonamento attivo per `professionista` con il `tipo`
+    richiesto ('standard' o 'evidenza') e la durata in giorni.
 
     Replica la logica cumulativa di Abbonamento.activate(): se la escort ha
     già un abbonamento dello stesso tipo non scaduto, la nuova scadenza
     parte da QUELLA (non da now), così l'omaggio si somma al pre-esistente
     invece di accorciarlo.
+
+    Il record `piano` è obbligatorio (FK PROTECT su Abbonamento): scelgo il
+    piano attivo più corto del tipo richiesto come "anchor". Non influenza
+    la durata effettiva, perché `scadenza` viene calcolata da `durata_giorni`.
     """
-    from apps.abbonamenti.models import Abbonamento
+    from apps.abbonamenti.models import Abbonamento, PianoAbbonamento
+    piano = (
+        PianoAbbonamento.objects
+        .filter(tipo=tipo, attivo=True)
+        .order_by('durata_giorni')
+        .first()
+    )
+    if piano is None:
+        # Fallback: pianifica anche se nessun piano attivo esiste (es. listino svuotato)
+        piano = PianoAbbonamento.objects.filter(tipo=tipo).order_by('durata_giorni').first()
+    if piano is None:
+        raise ValueError(
+            f'Nessun piano "{tipo}" presente. Crea un PianoAbbonamento di tipo "{tipo}" '
+            'prima di concedere omaggi (vedi: Piani abbonamento).'
+        )
     now = timezone.now()
     last_active = (
         Abbonamento.objects
         .filter(
             professionista=professionista,
-            piano__tipo=piano.tipo,
+            piano__tipo=tipo,
             stato='attivo',
             scadenza__gt=now,
         )
@@ -114,19 +135,42 @@ class ProfessionistaAdmin(ModelAdmin):
         return custom + urls
 
     def abbonamento_omaggio(self, obj):
-        """Sezione readonly dentro la pagina escort che mostra gli
-        abbonamenti attivi correnti e un bottone per concederne uno omaggio.
+        """Sezione readonly: mostra gli ultimi abbonamenti (attivi/scaduti/...)
+        e un bottone per concederne uno omaggio.
+
+        Mostro anche gli scaduti perché aiuta a capire perché una scheda è/non è
+        visibile pubblicamente — lo stato "vera visibilità" è calcolato qui
+        in real-time (scadenza__gt=now) e indipendente dallo stato nel DB
+        (che potrebbe essere ancora 'attivo' se expire_subscriptions non gira
+        come cron).
         """
         if not obj or not obj.pk:
             return format_html('<span style="color:#888;">Salva la scheda per poter gestire gli abbonamenti.</span>')
         from apps.abbonamenti.models import Abbonamento
         now = timezone.now()
-        attivi = (
+        ultimi = (
             Abbonamento.objects
-            .filter(professionista=obj, stato='attivo', scadenza__gt=now)
+            .filter(professionista=obj)
             .select_related('piano')
-            .order_by('-scadenza')
+            .order_by('-created_at')[:10]
         )
+        ha_attivo = ultimi.filter(stato='attivo', scadenza__gt=now).exists() if obj.pk else False
+        # Status reale: la scheda è "online" solo se ha almeno un abbonamento
+        # con stato='attivo' AND scadenza > now (logica di Professionista.objects.visible()).
+        if ha_attivo:
+            status_box = (
+                '<div style="color:#065f46;background:#ecfdf5;border:1px solid #6ee7b7;'
+                'padding:8px 12px;border-radius:6px;margin-bottom:8px;">'
+                '<strong>✓ Scheda visibile pubblicamente</strong> — c\'è almeno un '
+                'abbonamento attivo non scaduto.</div>'
+            )
+        else:
+            status_box = (
+                '<div style="color:#b54708;background:#fff7ed;border:1px solid #fed7aa;'
+                'padding:8px 12px;border-radius:6px;margin-bottom:8px;">'
+                '<strong>✗ Scheda NON visibile pubblicamente</strong> — nessun '
+                'abbonamento attivo non scaduto.</div>'
+            )
         grant_url = reverse('admin:professioniste_professionista_grant', args=[obj.pk])
         button = format_html(
             '<a href="{}" class="button" style="background:#E91E8C;color:#fff;'
@@ -135,39 +179,48 @@ class ProfessionistaAdmin(ModelAdmin):
             '+ Concedi abbonamento omaggio</a>',
             grant_url,
         )
-        if not attivi.exists():
+        if not ultimi.exists():
             return format_html(
-                '<div style="color:#b54708;background:#fff7ed;border:1px solid #fed7aa;'
-                'padding:8px 12px;border-radius:6px;">'
-                '<strong>Nessun abbonamento attivo.</strong> '
-                'La scheda <em>non è visibile pubblicamente</em> finché non c\'è un abbonamento attivo.'
-                '</div>{}',
+                '{}{}',
+                format_html(status_box),
                 button,
             )
-        list_html = format_html_join(
-            '\n',
-            '<li><strong>{}</strong> ({}) — scade il {}</li>',
-            ((a.piano.nome, a.piano.get_tipo_display(), a.scadenza.strftime('%d/%m/%Y %H:%M')) for a in attivi),
-        )
+
+        def _row(a):
+            scaduto = a.scadenza is None or a.scadenza <= now
+            if a.stato == 'attivo' and not scaduto:
+                badge = '<span style="color:#065f46;font-weight:600;">attivo</span>'
+            elif a.stato == 'attivo' and scaduto:
+                badge = '<span style="color:#b91c1c;font-weight:600;">scaduto (stato DB: attivo)</span>'
+            else:
+                badge = f'<span style="color:#666;">{a.get_stato_display()}</span>'
+            scadenza_str = a.scadenza.strftime('%d/%m/%Y %H:%M') if a.scadenza else '—'
+            return format_html(
+                '<li><strong>{}</strong> ({}) — scadenza {} · {}</li>',
+                a.piano.nome, a.piano.get_tipo_display(), scadenza_str, format_html(badge),
+            )
+
+        rows = format_html_join('\n', '{}', ((_row(a),) for a in ultimi))
         return format_html(
-            '<ul style="margin:0 0 6px 0;padding-left:20px;">{}</ul>{}',
-            list_html,
+            '{}<ul style="margin:0 0 6px 0;padding-left:20px;">{}</ul>{}',
+            format_html(status_box),
+            rows,
             button,
         )
-    abbonamento_omaggio.short_description = 'Abbonamenti attivi'
+    abbonamento_omaggio.short_description = 'Abbonamenti (ultimi 10)'
 
     def grant_abbonamento_view(self, request, professionista_id):
         professionista = get_object_or_404(Professionista, pk=professionista_id)
         if request.method == 'POST':
             form = _GrantAbbonamentoForm(request.POST)
             if form.is_valid():
-                piano = form.cleaned_data['piano']
+                tipo = form.cleaned_data['tipo']
                 durata = form.cleaned_data['durata_giorni']
-                ab = _grant_subscription(professionista, piano, durata)
+                ab = _grant_subscription(professionista, tipo, durata)
                 messages.success(
                     request,
-                    f'Abbonamento omaggio creato per {professionista.nome}: '
-                    f'{piano.nome} ({piano.get_tipo_display()}) — scade il '
+                    f'Abbonamento omaggio {ab.piano.get_tipo_display()} creato per '
+                    f'{professionista.nome} — scade il '
                     f'{ab.scadenza.strftime("%d/%m/%Y %H:%M")}.'
                 )
                 return redirect('admin:professioniste_professionista_change', professionista_id)
@@ -184,19 +237,20 @@ class ProfessionistaAdmin(ModelAdmin):
 
     @admin.action(description='Concedi abbonamento omaggio')
     def concedi_abbonamento_omaggio(self, request, queryset):
-        """Azione bulk: applica lo stesso piano+durata a tutte le escort selezionate."""
+        """Azione bulk: applica lo stesso tipo+durata a tutte le escort selezionate."""
         if request.POST.get('apply'):
             form = _GrantAbbonamentoForm(request.POST)
             if form.is_valid():
-                piano = form.cleaned_data['piano']
+                tipo = form.cleaned_data['tipo']
                 durata = form.cleaned_data['durata_giorni']
                 count = 0
                 for prof in queryset:
-                    _grant_subscription(prof, piano, durata)
+                    _grant_subscription(prof, tipo, durata)
                     count += 1
+                tipo_label = dict(_GrantAbbonamentoForm.TIPO_CHOICES).get(tipo, tipo).split('—')[0].strip()
                 self.message_user(
                     request,
-                    f'Abbonamento omaggio {piano.nome} ({durata} giorni) creato per {count} scheda/e.',
+                    f'Abbonamento omaggio {tipo_label} ({durata} giorni) creato per {count} scheda/e.',
                     level=messages.SUCCESS,
                 )
                 return None

@@ -30,6 +30,14 @@ if [ "${SKIP_SEED_DEMO:-}" != "1" ]; then
     python manage.py seed_demo || echo "seed_demo fallito (ignoro)"
 fi
 
+# Marca scaduti gli abbonamenti con scadenza nel passato. Senza un cron
+# esterno (Railway free tier non ce l'ha), almeno ad ogni deploy si fa
+# pulizia. Il filtro Professionista.objects.visible() esclude comunque le
+# scadute via scadenza__gt=now, ma marcare lo stato='scaduto' nel DB tiene
+# le notifiche/email sincronizzate e l'admin pulito.
+echo "→ Expire abbonamenti scaduti..."
+python manage.py expire_subscriptions || echo "expire_subscriptions fallito (ignoro)"
+
 echo "→ Avvio gunicorn su porta ${PORT:-8000}..."
 exec gunicorn config.wsgi:application \
     --bind "0.0.0.0:${PORT:-8000}" \

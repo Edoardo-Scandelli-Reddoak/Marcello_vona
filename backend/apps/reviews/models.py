@@ -12,6 +12,10 @@ class Recensione(models.Model):
     autore = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     stelle = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     testo = models.TextField()
+    # Risposta facoltativa della escort: visibile pubblicamente sotto la
+    # recensione. Solo la proprietaria del profilo può scriverla/aggiornarla.
+    risposta_escort = models.TextField(blank=True, default='')
+    risposta_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

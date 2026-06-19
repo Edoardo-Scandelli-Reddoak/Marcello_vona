@@ -56,6 +56,14 @@ export default function SchedaEscortPage() {
   const [reviewTesto, setReviewTesto] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Risposta della escort alle recensioni ricevute. Stato per ID:
+  // - replyOpenId: quale recensione è in editing
+  // - replyDraft: testo nella textarea
+  // - replySaving: lock anti-doppio-click
+  const [replyOpenId, setReplyOpenId] = useState<number | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
+  const [replySaving, setReplySaving] = useState(false);
+
   // Gallery
   const [activeImage, setActiveImage] = useState(0);
 
@@ -155,6 +163,30 @@ export default function SchedaEscortPage() {
     } catch {
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openReplyEditor = (r: any) => {
+    setReplyOpenId(r.id);
+    setReplyDraft(r.risposta_escort || '');
+  };
+
+  const cancelReplyEditor = () => {
+    setReplyOpenId(null);
+    setReplyDraft('');
+  };
+
+  const submitReply = async (id: number) => {
+    if (replySaving || !slug) return;
+    setReplySaving(true);
+    try {
+      await recensioniApi.rispondi(id, replyDraft.trim());
+      const updated = await recensioniApi.list(slug);
+      setRecensioni(updated);
+      cancelReplyEditor();
+    } catch {
+    } finally {
+      setReplySaving(false);
     }
   };
 
@@ -468,6 +500,70 @@ export default function SchedaEscortPage() {
                       </div>
                     </div>
                     <p className="ml-11 text-sm leading-relaxed text-[#1A1A1A]/70">{r.testo}</p>
+
+                    {/* Risposta della escort: card sotto la recensione,
+                        leggermente rientrata e con sfondo rosa. Visibile a
+                        chiunque legga le recensioni. */}
+                    {r.risposta_escort && replyOpenId !== r.id && (
+                      <div className="ml-11 mt-3 rounded-xl border-l-2 border-[#E91E8C] bg-[#E91E8C]/[0.04] p-3">
+                        <p className="text-xs font-semibold text-[#E91E8C]">
+                          Risposta di {profile?.nome}
+                          {r.risposta_at && (
+                            <span className="ml-2 font-normal text-[#1A1A1A]/40">
+                              {new Date(r.risposta_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-[#1A1A1A]/80">{r.risposta_escort}</p>
+                      </div>
+                    )}
+
+                    {/* Bottone "Rispondi"/"Modifica risposta" visibile solo alla
+                        escort proprietaria (can_reply=true dal backend). */}
+                    {r.can_reply && replyOpenId !== r.id && (
+                      <div className="ml-11 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => openReplyEditor(r)}
+                          className="text-xs font-medium text-[#E91E8C] hover:underline"
+                        >
+                          {r.risposta_escort ? 'Modifica la tua risposta' : 'Rispondi'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Editor risposta (textarea + bottoni Salva/Annulla). */}
+                    {r.can_reply && replyOpenId === r.id && (
+                      <div className="ml-11 mt-3 rounded-xl border border-[#E91E8C]/30 bg-white p-3">
+                        <Textarea
+                          value={replyDraft}
+                          onChange={(e) => setReplyDraft(e.target.value)}
+                          placeholder="Scrivi la tua risposta..."
+                          rows={3}
+                          maxLength={1500}
+                          className="text-sm"
+                        />
+                        <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelReplyEditor}
+                            disabled={replySaving}
+                            className="text-xs font-medium text-[#1A1A1A]/60 hover:underline disabled:opacity-50"
+                          >
+                            Annulla
+                          </button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => submitReply(r.id)}
+                            disabled={replySaving}
+                            className="bg-[#E91E8C] text-white hover:bg-[#D11A7D]"
+                          >
+                            {replySaving ? 'Salvataggio...' : (r.risposta_escort ? 'Aggiorna' : 'Pubblica')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {recensioni.length === 0 && (

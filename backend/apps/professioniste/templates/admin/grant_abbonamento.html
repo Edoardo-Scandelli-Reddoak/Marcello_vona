@@ -24,6 +24,12 @@
     .grant-row input, .grant-row select { width:100%; padding:0.6rem 0.7rem; border:1px solid #d4d4d8; border-radius:8px; font-size:0.95rem; }
     .grant-help { color:#777; font-size:0.82rem; margin-top:0.25rem; }
     .grant-error { color:#b91c1c; font-size:0.85rem; margin-top:0.25rem; }
+    /* Stile radio "Tipo abbonamento": righe verticali con bordo, label leggibile.
+       Sovrascrive lo style="width:100%" generico del .grant-row input. */
+    .grant-row ul { list-style: none; padding: 0; margin: 0; }
+    .grant-row ul li { margin-bottom: 0.4rem; }
+    .grant-row input[type="radio"] { width: auto; margin-right: 0.5rem; vertical-align: middle; }
+    .grant-row ul li label { font-weight: 500; display: inline; color: #1A1A1A; }
     .grant-buttons { display:flex; gap:0.6rem; align-items:center; margin-top:1.2rem; }
     .grant-btn-primary { background:#E91E8C; color:#fff; padding:0.7rem 1.3rem; border:0; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.95rem; }
     .grant-btn-primary:hover { background:#D11A7D; }
@@ -40,10 +46,9 @@
     <form method="post">
       {% csrf_token %}
       <div class="grant-row">
-        <label for="id_piano">Piano</label>
-        {{ form.piano }}
-        {% if form.piano.help_text %}<p class="grant-help">{{ form.piano.help_text }}</p>{% endif %}
-        {% for e in form.piano.errors %}<p class="grant-error">{{ e }}</p>{% endfor %}
+        <label>Tipo abbonamento</label>
+        {{ form.tipo }}
+        {% for e in form.tipo.errors %}<p class="grant-error">{{ e }}</p>{% endfor %}
       </div>
       <div class="grant-row">
         <label for="id_durata_giorni">Durata (giorni)</label>
