@@ -11,7 +11,7 @@ import EscortCard from '@/components/EscortCard';
 import Carousel from '@/components/Carousel';
 import StarRating from '@/components/StarRating';
 import PromoBanner from '@/components/PromoBanner';
-import { escortApi, recensioniApi, bannersApi, type HeroSettings } from '@/lib/api';
+import { escortApi, recensioniApi, bannersApi, provinceApi, type HeroSettings } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function HomePage() {
@@ -20,6 +20,8 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [categoria, setCategoria] = useState('');
   const [distanza, setDistanza] = useState('');
+  const [provincia, setProvincia] = useState('');
+  const [province, setProvince] = useState<{ provincia: string; count: number }[]>([]);
   const [featured, setFeatured] = useState<any[]>([]);
   const [nearby, setNearby] = useState<any[]>([]);
   const [siteReviews, setSiteReviews] = useState<any[]>([]);
@@ -29,6 +31,7 @@ export default function HomePage() {
     escortApi.featured().then(setFeatured).catch(() => {});
     recensioniApi.sito().then(setSiteReviews).catch(() => {});
     bannersApi.hero().then(setHero).catch(() => {});
+    provinceApi.list().then(setProvince).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (categoria) params.set('categoria', categoria);
+    if (provincia) params.set('provincia', provincia);
     if (distanza && geo.lat && geo.lng) {
       params.set('distanza', distanza);
       params.set('lat', String(geo.lat));
@@ -125,6 +129,18 @@ export default function HomePage() {
               <option value="10">10 km</option>
               <option value="25">25 km</option>
               <option value="50">50 km</option>
+            </select>
+            <select
+              value={provincia}
+              onChange={(e) => setProvincia(e.target.value)}
+              className="col-span-2 h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm sm:col-span-1"
+            >
+              <option value="">Provincia</option>
+              {province.map((p) => (
+                <option key={p.provincia} value={p.provincia}>
+                  {p.provincia} ({p.count})
+                </option>
+              ))}
             </select>
           </div>
           <Button type="submit" className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D] sm:w-auto">
