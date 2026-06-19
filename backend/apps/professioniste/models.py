@@ -176,6 +176,10 @@ class Professionista(models.Model):
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
+        # Normalizza la sigla provincia: sempre MAIUSCOLO e senza spazi,
+        # così "bo", "Bo" e "BO" diventano un unico valore "BO".
+        if self.provincia:
+            self.provincia = self.provincia.strip().upper()
         if not self.slug:
             base_slug = slugify(self.nome)
             slug = base_slug
