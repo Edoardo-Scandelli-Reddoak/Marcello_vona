@@ -123,6 +123,44 @@ class ProfessionistaAdmin(ModelAdmin):
     inlines = [FotoInline, VideoInline]
     actions = ['approva_escort', 'rifiuta_escort', 'concedi_abbonamento_omaggio']
 
+    def save_model(self, request, obj, form, change):
+        """Geocodifica automatica dell'indirizzo pubblico anche quando la
+        scheda viene creata/modificata dall'admin.
+
+        La registrazione via API lo fa già nei serializer; qui replichiamo lo
+        stesso comportamento per il percorso admin, così lat/lng vengono
+        sempre valorizzati. Best-effort: se Nominatim non risponde, lat/lng
+        restano invariati. Se l'admin inserisce le coordinate a mano, le
+        rispettiamo e non sovrascriviamo.
+        """
+        super().save_model(request, obj, form, change)
+
+        coords_a_mano = 'latitudine' in form.changed_data or 'longitudine' in form.changed_data
+        if coords_a_mano:
+            return
+
+        address_fields = ('via', 'cap', 'citta', 'provincia', 'nazione')
+        address_changed = any(f in form.changed_data for f in address_fields)
+        # Geocodifica alla creazione, oppure quando cambia l'indirizzo, oppure
+        # quando le coordinate mancano del tutto (es. scheda importata senza).
+        coords_mancanti = obj.latitudine is None or obj.longitudine is None
+        if not (not change or address_changed or coords_mancanti):
+            return
+
+        from apps.professioniste.geocoding import geocode_address
+        parts = [obj.via, obj.cap, obj.citta, obj.provincia, obj.nazione]
+        address = ', '.join(p for p in parts if p)
+        if not address:
+            return
+        geo = geocode_address(address)
+        if geo and geo.get('lat') is not None and geo.get('lng') is not None:
+            obj.latitudine = geo['lat']
+            obj.longitudine = geo['lng']
+            obj.indirizzo_pubblico_aggiornato_at = timezone.now()
+            obj.save(update_fields=[
+                'latitudine', 'longitudine', 'indirizzo_pubblico_aggiornato_at',
+            ])
+
     def get_urls(self):
         urls = super().get_urls()
         custom = [
