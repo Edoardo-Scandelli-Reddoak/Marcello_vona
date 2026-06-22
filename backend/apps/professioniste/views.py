@@ -115,17 +115,33 @@ class ProfessionistaNearbyView(generics.ListAPIView):
     def get_queryset(self):
         lat = self.request.query_params.get('lat')
         lng = self.request.query_params.get('lng')
-        qs = Professionista.objects.visible().filter(
-            latitudine__isnull=False,
-            longitudine__isnull=False,
-        ).select_related('categoria')
+        # NB: NON filtriamo per latitudine/longitudine non-null. La sezione
+        # "Vicino a te" deve mostrare TUTTE le escort visibili: quelle senza
+        # coordinate (non ancora geocodificate) non vanno nascoste, altrimenti
+        # la sezione si svuota se poche schede hanno le coordinate.
+        qs = (
+            Professionista.objects.visible()
+            .select_related('categoria')
+            .order_by('-created_at')
+        )
 
         if lat and lng:
             lat, lng = float(lat), float(lng)
-            qs_list = list(qs)
-            qs_list.sort(key=lambda p: haversine_distance(lat, lng, p.latitudine, p.longitudine))
-            return qs_list[:12]
-        return qs.order_by('-created_at')[:12]
+
+            def sort_key(p):
+                # Prima le geocodificate ordinate per distanza crescente
+                # (la più vicina, poi la seconda meno lontana, e così via);
+                # le schede senza coordinate finiscono in coda mantenendo
+                # l'ordine per data (più recenti prima).
+                if p.latitudine is not None and p.longitudine is not None:
+                    return (0, haversine_distance(lat, lng, p.latitudine, p.longitudine))
+                return (1, 0.0)
+
+            return sorted(qs, key=sort_key)[:12]
+
+        # Senza la posizione dell'utente non si può calcolare la distanza:
+        # fallback ai più recenti.
+        return list(qs[:12])
 
 
 class ProfessionistaDetailView(generics.RetrieveAPIView):
