@@ -154,7 +154,12 @@ class ProfessionistaAdmin(ModelAdmin):
             .select_related('piano')
             .order_by('-created_at')[:10]
         )
-        ha_attivo = ultimi.filter(stato='attivo', scadenza__gt=now).exists() if obj.pk else False
+        # NB: `ultimi` è uno slice ([:10]) → non si può chiamare .filter() su di
+        # esso (Django solleva "Cannot filter a query once a slice has been
+        # taken"). Lo stato "attivo" va calcolato con una query separata.
+        ha_attivo = Abbonamento.objects.filter(
+            professionista=obj, stato='attivo', scadenza__gt=now,
+        ).exists()
         # Status reale: la scheda è "online" solo se ha almeno un abbonamento
         # con stato='attivo' AND scadenza > now (logica di Professionista.objects.visible()).
         if ha_attivo:
