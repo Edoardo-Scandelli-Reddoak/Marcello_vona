@@ -220,7 +220,8 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
         return ''
 
     def get_indirizzo_completo(self, obj):
-        parts = [obj.via, f'{obj.cap} {obj.citta} ({obj.provincia})']
+        citta_riga = f'{obj.cap} {obj.citta}'.strip()
+        parts = [obj.via, f'{citta_riga} ({obj.provincia})']
         if obj.nazione and obj.nazione != 'Italia':
             parts.append(obj.nazione)
         return ', '.join(filter(None, parts))

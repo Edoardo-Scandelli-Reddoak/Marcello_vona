@@ -640,7 +640,7 @@ export default function DashboardPage() {
         <div className="mb-4 rounded-xl bg-white p-4 text-sm ring-1 ring-[#1A1A1A]/[0.06]">
           <p className="text-[#1A1A1A]/55">Indirizzo pubblico attuale</p>
           <p className="mt-0.5 font-medium text-[#1A1A1A]">
-            {profilo.via}, {profilo.cap} {profilo.citta} ({profilo.provincia})
+            {profilo.via}, {`${profilo.cap} ${profilo.citta}`.trim()} ({profilo.provincia})
           </p>
           {profilo.indirizzo_pubblico_aggiornato_at && (
             <p className="mt-0.5 text-xs text-[#1A1A1A]/40">

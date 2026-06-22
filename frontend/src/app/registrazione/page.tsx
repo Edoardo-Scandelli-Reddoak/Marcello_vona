@@ -166,7 +166,6 @@ export default function RegistrazionePage() {
     if (!categoria) missing.push('Categoria');
     if (!telefono.trim()) missing.push('Telefono');
     if (!via.trim()) missing.push('Via / Indirizzo');
-    if (!cap.trim()) missing.push('CAP');
     if (!citta.trim()) missing.push('Città');
     if (!provincia.trim()) missing.push('Provincia');
     if (missing.length > 0) {
@@ -451,8 +450,8 @@ export default function RegistrazionePage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>CAP *</Label>
-                  <Input value={cap} onChange={(e) => setCap(e.target.value)} placeholder="20121" maxLength={5} required />
+                  <Label>CAP</Label>
+                  <Input value={cap} onChange={(e) => setCap(e.target.value)} placeholder="20121" maxLength={5} />
                 </div>
                 <div>
                   <Label>Città *</Label>

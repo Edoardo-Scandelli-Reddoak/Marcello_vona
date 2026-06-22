@@ -93,7 +93,7 @@ class Professionista(models.Model):
     # Indirizzo PUBBLICO — quello mostrato agli utenti sul sito e usato sulla mappa.
     # Modificabile in qualsiasi momento dalla dashboard.
     via = models.CharField(max_length=500, verbose_name='Via / Indirizzo (pubblico)')
-    cap = models.CharField(max_length=10, verbose_name='CAP (pubblico)')
+    cap = models.CharField(max_length=10, blank=True, default='', verbose_name='CAP (pubblico)')
     citta = models.CharField(max_length=200, verbose_name='Città (pubblica)')
     zona = models.CharField(
         max_length=200, blank=True, default='',
