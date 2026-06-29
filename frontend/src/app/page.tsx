@@ -222,13 +222,11 @@ export default function HomePage() {
           </p>
         )}
         {nearby.length > 0 ? (
-          <Carousel>
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
             {nearby.map((p) => (
-              <div key={p.id} className="w-[260px] flex-shrink-0">
-                <EscortCard escort={p} />
-              </div>
+              <EscortCard key={p.id} escort={p} />
             ))}
-          </Carousel>
+          </div>
         ) : (
           !geo.loading && <p className="text-[#1A1A1A]/40">Nessuna escort trovata.</p>
         )}
