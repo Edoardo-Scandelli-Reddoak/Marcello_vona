@@ -314,12 +314,11 @@ class ProfessionistaCreateSerializer(serializers.ModelSerializer):
         # entra in dashboard e usa "Mi trovo qui". Best-effort: se Nominatim
         # è down o l'indirizzo non è geolocalizzabile, lat/lng restano None
         # e l'escort potrà ri-geocodificare manualmente più tardi.
-        from apps.professioniste.geocoding import geocode_address
-        parts = [
+        from apps.professioniste.geocoding import geocode_location
+        geo = geocode_location(
             professionista.via, professionista.cap, professionista.citta,
             professionista.provincia, professionista.nazione,
-        ]
-        geo = geocode_address(', '.join(p for p in parts if p))
+        )
         if geo and geo.get('lat') is not None and geo.get('lng') is not None:
             professionista.latitudine = geo['lat']
             professionista.longitudine = geo['lng']
@@ -409,9 +408,10 @@ class ProfessionistaUpdateSerializer(serializers.ModelSerializer):
             # nuovo indirizzo. Se Nominatim non risponde o l'indirizzo è
             # ambiguo, lat/lng restano invariati (l'escort vede comunque il
             # nuovo testo e può usare "Mi trovo qui" se serve).
-            from apps.professioniste.geocoding import geocode_address
-            parts = [updated.via, updated.cap, updated.citta, updated.provincia, updated.nazione]
-            geo = geocode_address(', '.join(p for p in parts if p))
+            from apps.professioniste.geocoding import geocode_location
+            geo = geocode_location(
+                updated.via, updated.cap, updated.citta, updated.provincia, updated.nazione,
+            )
             if geo and geo.get('lat') is not None and geo.get('lng') is not None:
                 updated.latitudine = geo['lat']
                 updated.longitudine = geo['lng']

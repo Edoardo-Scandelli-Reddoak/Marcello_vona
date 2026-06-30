@@ -135,7 +135,7 @@ export default function HomePage() {
               onChange={(e) => setProvincia(e.target.value)}
               className="col-span-2 h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm sm:col-span-1"
             >
-              <option value="">Provincia</option>
+              <option value="">Città</option>
               {province.map((p) => (
                 <option key={p.provincia} value={p.provincia}>
                   {p.provincia} ({p.count})

@@ -38,6 +38,13 @@ fi
 echo "→ Expire abbonamenti scaduti..."
 python manage.py expire_subscriptions || echo "expire_subscriptions fallito (ignoro)"
 
+# Backfill coordinate mancanti (lat/lng) per le schede create da admin in cui
+# la geocodifica non era andata a buon fine — necessario per "Vicino a te".
+# Best-effort, rate-limited (Nominatim ~1 req/s); col fallback a livello città
+# il set di schede "senza coordinate" tende a svuotarsi nel tempo.
+echo "→ Geocode coordinate mancanti..."
+python manage.py geocode_missing || echo "geocode_missing fallito (ignoro)"
+
 echo "→ Avvio gunicorn su porta ${PORT:-8000}..."
 exec gunicorn config.wsgi:application \
     --bind "0.0.0.0:${PORT:-8000}" \

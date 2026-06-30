@@ -146,7 +146,7 @@ export default function EscortPage() {
             onChange={(e) => setProvincia(e.target.value)}
             className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
           >
-            <option value="">Provincia</option>
+            <option value="">Città</option>
             {province.map((p) => (
               <option key={p.provincia} value={p.provincia}>
                 {p.provincia} ({p.count})

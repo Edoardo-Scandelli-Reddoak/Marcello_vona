@@ -147,12 +147,10 @@ class ProfessionistaAdmin(ModelAdmin):
         if not (not change or address_changed or coords_mancanti):
             return
 
-        from apps.professioniste.geocoding import geocode_address
-        parts = [obj.via, obj.cap, obj.citta, obj.provincia, obj.nazione]
-        address = ', '.join(p for p in parts if p)
-        if not address:
+        from apps.professioniste.geocoding import geocode_location
+        if not any([obj.via, obj.citta, obj.provincia, obj.nazione]):
             return
-        geo = geocode_address(address)
+        geo = geocode_location(obj.via, obj.cap, obj.citta, obj.provincia, obj.nazione)
         if geo and geo.get('lat') is not None and geo.get('lng') is not None:
             obj.latitudine = geo['lat']
             obj.longitudine = geo['lng']

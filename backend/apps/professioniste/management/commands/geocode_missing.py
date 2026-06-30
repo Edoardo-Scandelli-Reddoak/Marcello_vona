@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.professioniste.geocoding import geocode_address
+from apps.professioniste.geocoding import geocode_location
 from apps.professioniste.models import Professionista
 
 
@@ -21,9 +21,12 @@ class Command(BaseCommand):
     help = 'Geocodifica le escort senza latitudine/longitudine (best-effort, rate-limited).'
 
     def handle(self, *args, **options):
+        # Non escludiamo più chi ha `via` vuota: il fallback a livello città
+        # (geocode_location) geolocalizza comunque l'indirizzo se almeno la
+        # città è presente.
         missing = Professionista.objects.filter(
             Q(latitudine__isnull=True) | Q(longitudine__isnull=True)
-        ).exclude(via='')
+        )
         total = missing.count()
         self.stdout.write(f'Trovate {total} escort senza coordinate.')
 
@@ -32,7 +35,7 @@ class Command(BaseCommand):
             parts = [prof.via, prof.cap, prof.citta, prof.provincia, prof.nazione]
             address = ', '.join(p for p in parts if p)
             self.stdout.write(f'[{i}/{total}] {prof.nome} → {address}')
-            geo = geocode_address(address)
+            geo = geocode_location(prof.via, prof.cap, prof.citta, prof.provincia, prof.nazione)
             if geo and geo.get('lat') is not None and geo.get('lng') is not None:
                 prof.latitudine = geo['lat']
                 prof.longitudine = geo['lng']
