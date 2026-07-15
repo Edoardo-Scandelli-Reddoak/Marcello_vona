@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Search, List, Map, RotateCcw } from 'lucide-react';
@@ -22,6 +22,8 @@ export default function EscortPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Filter state from URL
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -32,8 +34,11 @@ export default function EscortPage() {
   const [ordering, setOrdering] = useState(searchParams.get('ordering') || '');
   const [province, setProvince] = useState<{ provincia: string; count: number }[]>([]);
 
+  // p === 1 → sostituisce i risultati (nuovi filtri / primo caricamento).
+  // p > 1  → accoda i risultati alla lista esistente (scroll infinito).
   const fetchResults = useCallback(async (p: number = 1) => {
-    setLoading(true);
+    if (p === 1) setLoading(true);
+    else setLoadingMore(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
@@ -52,12 +57,14 @@ export default function EscortPage() {
       params.set('page', String(p));
 
       const data = await escortApi.list(params.toString());
-      setResults(data.results || data);
+      const newResults = data.results || data;
+      setResults((prev) => (p === 1 ? newResults : [...prev, ...newResults]));
       setTotalCount(data.count || (data.results ? data.results.length : data.length));
     } catch {
-      setResults([]);
+      if (p === 1) setResults([]);
     } finally {
-      setLoading(false);
+      if (p === 1) setLoading(false);
+      else setLoadingMore(false);
     }
   }, [search, categoria, distanza, ratingMin, provincia, ordering, geo.lat, geo.lng]);
 
@@ -65,15 +72,46 @@ export default function EscortPage() {
     provinceApi.list().then(setProvince).catch(() => {});
   }, []);
 
+  // Quando cambiano i filtri (fetchResults cambia identità) si riparte dalla
+  // pagina 1 e la lista viene sostituita.
   useEffect(() => {
-    fetchResults(page);
-  }, [fetchResults, page]);
+    setPage(1);
+    fetchResults(1);
+  }, [fetchResults]);
+
+  // Quando `page` viene incrementato dallo scroll infinito, si accoda.
+  // fetchResults è volutamente escluso dalle dipendenze: cambia solo quando
+  // cambiano i filtri, caso già gestito dall'effetto sopra (che resetta page).
+  useEffect(() => {
+    if (page > 1) fetchResults(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   useEffect(() => {
     if (view === 'map') {
       escortApi.map().then(setMapMarkers).catch(() => {});
     }
   }, [view]);
+
+  const hasMore = results.length < totalCount;
+
+  // Scroll infinito: quando la sentinella in fondo alla lista entra nel
+  // viewport (con 400px di anticipo), carica la pagina successiva.
+  useEffect(() => {
+    if (view !== 'list' || !hasMore || loading || loadingMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPage((p) => p + 1);
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [view, hasMore, loading, loadingMore]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,8 +128,6 @@ export default function EscortPage() {
     setOrdering('');
     setPage(1);
   };
-
-  const totalPages = Math.ceil(totalCount / 12);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
@@ -211,29 +247,11 @@ export default function EscortPage() {
           {results.length === 0 && (
             <p className="py-20 text-center text-[#1A1A1A]/40">Nessuna escort trovata.</p>
           )}
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Precedente
-              </Button>
-              <span className="text-sm text-[#1A1A1A]/60">
-                Pagina {page} di {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Successiva
-              </Button>
-            </div>
+          {/* Scroll infinito: sentinella osservata dall'IntersectionObserver
+              per caricare la pagina successiva. */}
+          {hasMore && <div ref={sentinelRef} aria-hidden className="h-px w-full" />}
+          {loadingMore && (
+            <div className="py-8 text-center text-sm text-[#1A1A1A]/40">Caricamento...</div>
           )}
         </>
       ) : (
