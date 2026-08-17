@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone } from 'lucide-react';
+import { COMPANY, legalLine, telefonoHref } from '@/lib/company';
 
 export default function Footer() {
   return (
@@ -48,20 +49,20 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a
-                  href="mailto:info.escortbella@gmail.com"
+                  href={`mailto:${COMPANY.email}`}
                   className="inline-flex items-center gap-2 transition-colors duration-200 ease-out hover:text-[#E91E8C]"
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
-                  info.escortbella@gmail.com
+                  {COMPANY.email}
                 </a>
               </li>
               <li>
                 <a
-                  href="tel:+393520627731"
+                  href={telefonoHref}
                   className="inline-flex items-center gap-2 transition-colors duration-200 ease-out hover:text-[#E91E8C]"
                 >
                   <Phone className="h-4 w-4" aria-hidden="true" />
-                  +39 352 062 7731
+                  {COMPANY.telefono}
                 </a>
               </li>
             </ul>
@@ -84,6 +85,15 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Escort Bella. Tutti i diritti riservati.
           </span>
         </div>
+
+        {/* Identificazione dell'operatore: obbligatoria per un sito che vende
+            online e verificata in istruttoria dai provider di pagamento, che
+            confrontano questi dati con quelli del contratto. I valori arrivano
+            da COMPANY (src/lib/company.ts): i campi non ancora compilati
+            vengono omessi, non stampati vuoti. */}
+        <p className="mt-6 text-center text-xs leading-relaxed text-white/35 sm:text-left">
+          {legalLine()}
+        </p>
       </div>
     </footer>
   );
