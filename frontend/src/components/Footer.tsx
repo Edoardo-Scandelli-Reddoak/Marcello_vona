@@ -69,21 +69,11 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Riga finale: pagamenti a sinistra, copyright a destra (desktop).
-            Su mobile si impila verticalmente per leggibilità. */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm text-white/40 sm:flex-row sm:gap-6">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
-            <span className="text-xs uppercase tracking-wide text-white/50">
-              Metodi di pagamento accettati
-            </span>
-            <div className="flex items-center gap-3">
-              <VisaLogo />
-              <MastercardLogo />
-            </div>
-          </div>
-          <span className="text-center sm:text-right">
-            &copy; {new Date().getFullYear()} Escort Bella. Tutti i diritti riservati.
-          </span>
+        {/* Riga finale. I loghi Visa/Mastercard sono stati rimossi a settembre
+            2026: le carte non sono più un metodo di pagamento accettato, quindi
+            esibirli sarebbe una dichiarazione falsa. */}
+        <div className="mt-8 border-t border-white/10 pt-6 text-center text-sm text-white/40">
+          &copy; {new Date().getFullYear()} Escort Bella. Tutti i diritti riservati.
         </div>
 
         {/* Identificazione dell'operatore: obbligatoria per un sito che vende
@@ -96,60 +86,5 @@ export default function Footer() {
         </p>
       </div>
     </footer>
-  );
-}
-
-function VisaLogo() {
-  // Card bianca con scritta "VISA" in stile classico (bold italic blu Visa).
-  return (
-    <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white shadow-sm">
-      <svg viewBox="0 0 56 20" className="h-5 w-auto" aria-label="Visa">
-        <text
-          x="28"
-          y="16"
-          textAnchor="middle"
-          fontFamily="Helvetica, Arial, sans-serif"
-          fontSize="18"
-          fontWeight="900"
-          fontStyle="italic"
-          fill="#1A1F71"
-          letterSpacing="-0.5"
-        >
-          VISA
-        </text>
-      </svg>
-    </div>
-  );
-}
-
-function MastercardLogo() {
-  // Card bianca con i due cerchi (rosso + giallo) sovrapposti — il blend
-  // produce l'arancio nell'intersezione tipico del logo. `isolation: isolate`
-  // sull'svg confina il blend al suo stacking context (sennò "buca" il bianco
-  // della card sotto). Sotto, il wordmark "mastercard" minuscolo.
-  return (
-    <div className="flex h-9 w-14 flex-col items-center justify-center gap-0.5 rounded-md bg-white px-1 py-1 shadow-sm">
-      <svg
-        viewBox="0 0 36 22"
-        className="h-4 w-auto"
-        aria-label="Mastercard"
-        style={{ isolation: 'isolate' }}
-      >
-        <circle cx="14" cy="11" r="8" fill="#EB001B" />
-        <circle
-          cx="22"
-          cy="11"
-          r="8"
-          fill="#F79E1B"
-          style={{ mixBlendMode: 'multiply' }}
-        />
-      </svg>
-      <span
-        className="text-[6px] font-extrabold uppercase leading-none tracking-tight text-[#1A1A1A]/80"
-        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-      >
-        mastercard
-      </span>
-    </div>
   );
 }

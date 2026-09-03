@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
 import { escortApi, tagsApi, type Categoria } from '@/lib/api';
+import { whatsappHref } from '@/lib/company';
+import { MessageCircle } from 'lucide-react';
 
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -306,6 +308,32 @@ export default function RegistrazionePage() {
           <Button onClick={handleStep1} disabled={loading} className="w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D]">
             {loading ? 'Creazione...' : 'Continua'}
           </Button>
+
+          {/* Via di fuga per chi non vuole compilare i cinque passaggi da sola:
+              scrive su WhatsApp e la scheda la creiamo noi. */}
+          <div className="rounded-xl border border-[#E91E8C]/25 bg-[#E91E8C]/[0.04] p-4 text-center">
+            <p className="text-sm font-semibold text-[#1A1A1A]">
+              Vuoi che ti creiamo noi l&apos;account?
+            </p>
+            <p className="mt-1 text-sm text-[#1A1A1A]/65">
+              Scrivici su WhatsApp: ci pensiamo noi a creare la tua scheda e a
+              pubblicarla, tu ci mandi solo foto e informazioni.
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              className="mt-3 border-[#E91E8C]/40 text-[#E91E8C] hover:bg-[#E91E8C]/[0.06]"
+            >
+              <a
+                href={whatsappHref('Ciao! Vorrei iscrivermi su Escort Bella e mi servirebbe una mano a creare la scheda.')}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                Contattaci su WhatsApp
+              </a>
+            </Button>
+          </div>
         </div>
       )}
 

@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Check, Sparkles, ArrowRight, Loader2, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { abbonamentiApi, type PianoAbbonamento, type DiscountInfo, type CodicePromoValidation } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
+import PagamentoModal from '@/components/PagamentoModal';
 
 function formatEuro(prezzoEur: number, decimals = 2): string {
   return prezzoEur.toLocaleString('it-IT', {
@@ -47,7 +48,6 @@ const EVIDENZA_FEATURES = [
 
 export default function AbbonamentoPage() {
   const router = useRouter();
-  const search = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [piani, setPiani] = useState<PianoAbbonamento[]>([]);
   const [discount, setDiscount] = useState<DiscountInfo | null>(null);
@@ -56,9 +56,13 @@ export default function AbbonamentoPage() {
   const [promoInputError, setPromoInputError] = useState('');
   const [promoInputLoading, setPromoInputLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [checkoutId, setCheckoutId] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const cancelled = search.get('cancelled');
+  // Piano scelto: apre la finestra con le due opzioni di pagamento.
+  const [selezione, setSelezione] = useState<{
+    piano: PianoAbbonamento;
+    titolo: string;
+    importoLabel: string;
+  } | null>(null);
 
   useEffect(() => {
     abbonamentiApi
@@ -118,30 +122,6 @@ export default function AbbonamentoPage() {
     setPromoCode(null);
   };
 
-  const handlePurchase = async (piano: PianoAbbonamento) => {
-    setError('');
-    if (!authLoading && !user) {
-      router.push('/login?next=/abbonamento');
-      return;
-    }
-    setCheckoutId(piano.id);
-    try {
-      const codice = promoCode?.valido ? promoCode.codice : undefined;
-      const res = await abbonamentiApi.checkout(piano.id, codice);
-      window.location.href = res.redirect_url;
-    } catch (e: any) {
-      const msg = e.message || 'Errore durante il checkout.';
-      if (msg.toLowerCase().includes('credenziali')) {
-        setError('Devi essere loggato per acquistare. Effettua il login e riprova.');
-      } else if (msg.toLowerCase().includes('profilo') || msg.toLowerCase().includes('scheda')) {
-        setError('Devi prima completare la registrazione della tua scheda escort.');
-      } else {
-        setError(msg);
-      }
-      setCheckoutId(null);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -155,18 +135,17 @@ export default function AbbonamentoPage() {
       <div className="mb-8 text-center sm:mb-10">
         <h1 className="text-2xl font-bold text-[#1A1A1A] sm:text-3xl md:text-4xl">Scegli il tuo abbonamento</h1>
         <p className="mt-3 text-sm text-[#1A1A1A]/60 sm:text-base">
-          Trascina lo slider per scegliere la durata. Il prezzo si aggiorna automaticamente.
+          Trascina lo slider per scegliere la durata: il prezzo si aggiorna
+          automaticamente. Poi scrivici su WhatsApp e attiviamo noi la tua scheda.
         </p>
       </div>
 
-      {cancelled && (
-        <div className="mb-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
-          Pagamento annullato. Puoi riprovare quando vuoi.
-        </div>
-      )}
       {!authLoading && !user && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#E91E8C]/5 p-4 text-sm text-[#1A1A1A]/80">
-          <span>Per acquistare un abbonamento devi essere registrato e loggato.</span>
+          <span>
+            Hai già la tua scheda? Accedi prima di richiedere l&apos;attivazione, così
+            colleghiamo subito la richiesta al tuo profilo.
+          </span>
           <Button variant="outline" onClick={() => router.push('/login?next=/abbonamento')}>
             Accedi
           </Button>
@@ -231,8 +210,7 @@ export default function AbbonamentoPage() {
             subtitle="Pubblica la tua scheda"
             piani={standard}
             features={STANDARD_FEATURES}
-            onPurchase={handlePurchase}
-            checkoutId={checkoutId}
+            onScegli={setSelezione}
             promoActive={promoActive}
             linkDiscountPct={promoCode?.valido ? promoCode.sconto_percentuale : 0}
           />
@@ -243,8 +221,7 @@ export default function AbbonamentoPage() {
             subtitle={'In cima e tra "Le più apprezzate"'}
             piani={evidenza}
             features={EVIDENZA_FEATURES}
-            onPurchase={handlePurchase}
-            checkoutId={checkoutId}
+            onScegli={setSelezione}
             highlighted
             promoActive={promoActive}
             linkDiscountPct={promoCode?.valido ? promoCode.sconto_percentuale : 0}
@@ -292,6 +269,18 @@ export default function AbbonamentoPage() {
           )}
         </div>
       )}
+
+      {selezione && (
+        <PagamentoModal
+          open
+          onClose={() => setSelezione(null)}
+          piano={selezione.piano}
+          titolo={selezione.titolo}
+          importoLabel={selezione.importoLabel}
+          promoCodice={promoCode?.valido ? promoCode.codice : undefined}
+          loggedIn={Boolean(user)}
+        />
+      )}
     </div>
   );
 }
@@ -301,8 +290,8 @@ interface PianoBoxProps {
   subtitle: string;
   piani: PianoAbbonamento[];
   features: string[];
-  onPurchase: (piano: PianoAbbonamento) => void;
-  checkoutId: number | null;
+  /** Apre la finestra di pagamento col piano scelto. */
+  onScegli: (dati: { piano: PianoAbbonamento; titolo: string; importoLabel: string }) => void;
   highlighted?: boolean;
   promoActive?: boolean;
   /** % sconto dal codice del link (?promo=…), 0 se assente/invalido. Vince sulla promo generale. */
@@ -314,8 +303,7 @@ function PianoBox({
   subtitle,
   piani,
   features,
-  onPurchase,
-  checkoutId,
+  onScegli,
   highlighted = false,
   promoActive = false,
   linkDiscountPct = 0,
@@ -333,7 +321,6 @@ function PianoBox({
       : 0;
   const finalPrice = piano.prezzo_eur * (1 - effectiveDiscount / 100);
   const prezzoGiornaliero = piano.durata_giorni > 1 ? finalPrice / piano.durata_giorni : null;
-  const isLoading = checkoutId === piano.id;
   const hasDiscount = effectiveDiscount > 0;
 
   return (
@@ -428,21 +415,19 @@ function PianoBox({
       </ul>
 
       <Button
-        onClick={() => onPurchase(piano)}
-        disabled={isLoading}
+        onClick={() =>
+          onScegli({ piano, titolo: title, importoLabel: formatEuro(finalPrice) })
+        }
         className={`w-full ${
           highlighted ? 'bg-[#E91E8C] text-white hover:bg-[#D11A7D]' : 'bg-[#1A1A1A] text-white hover:bg-[#1A1A1A]/90'
         }`}
       >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            Acquista a {formatEuro(finalPrice)}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </>
-        )}
+        Attiva a {formatEuro(finalPrice)}
+        <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
       </Button>
+      <p className="mt-2 text-center text-xs text-[#1A1A1A]/50">
+        Bonifico o istruzioni in chat. Nessun pagamento con carta.
+      </p>
     </div>
   );
 }

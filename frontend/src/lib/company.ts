@@ -30,6 +30,14 @@ interface CompanyInfo {
   pec: string;
   /** Formato leggibile; il link `tel:` viene derivato in telefonoHref. */
   telefono: string;
+  /**
+   * IBAN su cui le escort fanno il bonifico dell'abbonamento.
+   * Finche' e' vuoto, la finestra di pagamento nasconde l'opzione bonifico e
+   * rimanda a WhatsApp: meglio nessun dato che un dato incompleto.
+   */
+  iban: string;
+  /** Intestatario del conto, come risulta alla banca. */
+  intestatarioConto: string;
 }
 
 export const COMPANY: CompanyInfo = {
@@ -43,10 +51,34 @@ export const COMPANY: CompanyInfo = {
   email: 'info.escortbella@gmail.com',
   pec: '',
   telefono: '+39 352 062 7731',
+  iban: 'IT20E0832739240000000002981',
+  intestatarioConto: 'Marcello Vona',
 };
+
+/** True quando c'e' un IBAN da mostrare. L'intestatario e' facoltativo: se
+ *  manca, la finestra di pagamento semplicemente non stampa quella riga. */
+export const bonificoDisponibile = Boolean(COMPANY.iban);
+
+/** IBAN a gruppi di 4 caratteri: si legge e si ricopia con meno errori. */
+export function ibanFormattato(): string {
+  return COMPANY.iban.replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+}
 
 /** Stessa normalizzazione usata dai bottoni "Chiamami" delle schede. */
 export const telefonoHref = `tel:${COMPANY.telefono.replace(/[^\d+]/g, '')}`;
+
+/**
+ * Link a WhatsApp verso il numero di Escort Bella, con messaggio opzionale
+ * gia' scritto. wa.me apre l'app se installata, altrimenti web.whatsapp.com.
+ *
+ * E' il canale con cui si concordano i pagamenti degli abbonamenti: sul sito
+ * non passa nessun pagamento.
+ */
+export function whatsappHref(messaggio?: string): string {
+  const numero = COMPANY.telefono.replace(/\D/g, '');
+  const base = `https://wa.me/${numero}`;
+  return messaggio ? `${base}?text=${encodeURIComponent(messaggio)}` : base;
+}
 
 /**
  * Riga di identificazione dell'operatore, con i campi vuoti omessi.

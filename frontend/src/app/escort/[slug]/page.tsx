@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { MapPin, Phone, Heart, Star, ArrowLeft, MessageCircle, Lock, Clock, Tag as TagIcon, Home, Car } from 'lucide-react';
+import { MapPin, Phone, Heart, Star, ArrowLeft, MessageCircle, Clock, Tag as TagIcon, Home, Car } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
-import { escortApi, recensioniApi, preferitiApi, sblocchiApi, mediaUrl } from '@/lib/api';
+import { escortApi, recensioniApi, preferitiApi, mediaUrl } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
 
@@ -48,8 +48,6 @@ export default function SchedaEscortPage() {
   const [isFav, setIsFav] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [unlockLoading, setUnlockLoading] = useState(false);
-  const [unlockError, setUnlockError] = useState('');
 
   // Review form
   const [reviewStelle, setReviewStelle] = useState(5);
@@ -92,32 +90,6 @@ export default function SchedaEscortPage() {
       setIsFav(res.is_favorite);
     } finally {
       setFavLoading(false);
-    }
-  };
-
-  const handleUnlockSocials = async () => {
-    if (!user) {
-      setAuthModalOpen(true);
-      return;
-    }
-    if (unlockLoading || !profile) return;
-    setUnlockError('');
-    setUnlockLoading(true);
-    try {
-      const res = await sblocchiApi.checkout(profile.id);
-      if (res.already_unlocked) {
-        // Ricarico il detail per ottenere i link sbloccati
-        const refreshed = await escortApi.detail(slug);
-        setProfile(refreshed);
-        return;
-      }
-      if (res.redirect_url) {
-        window.location.href = res.redirect_url;
-      }
-    } catch (e: any) {
-      setUnlockError(e.message || 'Errore durante il pagamento.');
-    } finally {
-      setUnlockLoading(false);
     }
   };
 
@@ -311,103 +283,71 @@ export default function SchedaEscortPage() {
               {/* Tags */}
               {p.tags && p.tags.length > 0 && <TagList tags={p.tags} />}
 
-              {/* Social — visibili solo dopo pagamento sblocco (1,90 €) */}
+              {/* Social: visibili a tutti. Fino a settembre 2026 erano dietro un
+                  pagamento una tantum di 1,90 €; ora sono liberi. */}
               {p.has_any_social && (
-                p.socials_unlocked ? (
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {p.onlyfans_url && (
-                      <a
-                        href={p.onlyfans_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`OnlyFans di ${p.nome}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
-                      >
-                        <OnlyFansIcon />
-                        OnlyFans
-                      </a>
-                    )}
-                    {p.instagram_url && (
-                      <a
-                        href={p.instagram_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Instagram di ${p.nome}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
-                      >
-                        <InstagramIcon />
-                        Instagram
-                      </a>
-                    )}
-                    {p.facebook_url && (
-                      <a
-                        href={p.facebook_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Facebook di ${p.nome}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
-                      >
-                        <FacebookIcon />
-                        Facebook
-                      </a>
-                    )}
-                    {p.tiktok_url && (
-                      <a
-                        href={p.tiktok_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`TikTok di ${p.nome}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
-                      >
-                        <TikTokIcon />
-                        TikTok
-                      </a>
-                    )}
-                    {p.telegram_url && (
-                      <a
-                        href={p.telegram_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Telegram di ${p.nome}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
-                      >
-                        <TelegramIcon />
-                        Telegram
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-5 rounded-2xl border border-[#E91E8C]/25 bg-gradient-to-br from-[#E91E8C]/5 to-transparent p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#E91E8C]/10">
-                        <Lock className="h-5 w-5 text-[#E91E8C]" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-[#1A1A1A]">Sblocca i canali social</h3>
-                        <p className="mt-1 text-sm text-[#1A1A1A]/65">
-                          Accedi ai profili OnlyFans, Instagram, Facebook, TikTok e Telegram di {p.nome} pagando una piccola tassa una tantum.
-                        </p>
-                        {unlockError && (
-                          <p className="mt-2 text-sm text-red-600">{unlockError}</p>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleUnlockSocials}
-                      disabled={unlockLoading}
-                      className="mt-4 w-full bg-[#E91E8C] text-white hover:bg-[#D11A7D] sm:w-auto"
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {p.onlyfans_url && (
+                    <a
+                      href={p.onlyfans_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`OnlyFans di ${p.nome}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
                     >
-                      {unlockLoading ? (
-                        'Avvio pagamento…'
-                      ) : (
-                        <>
-                          <Lock className="mr-2 h-4 w-4" />
-                          Sblocca per {((p.sblocco_social_prezzo_centesimi ?? 190) / 100).toLocaleString('it-IT', { minimumFractionDigits: 2 })} €
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )
+                      <OnlyFansIcon />
+                      OnlyFans
+                    </a>
+                  )}
+                  {p.instagram_url && (
+                    <a
+                      href={p.instagram_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Instagram di ${p.nome}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
+                    >
+                      <InstagramIcon />
+                      Instagram
+                    </a>
+                  )}
+                  {p.facebook_url && (
+                    <a
+                      href={p.facebook_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Facebook di ${p.nome}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
+                    >
+                      <FacebookIcon />
+                      Facebook
+                    </a>
+                  )}
+                  {p.tiktok_url && (
+                    <a
+                      href={p.tiktok_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`TikTok di ${p.nome}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
+                    >
+                      <TikTokIcon />
+                      TikTok
+                    </a>
+                  )}
+                  {p.telegram_url && (
+                    <a
+                      href={p.telegram_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Telegram di ${p.nome}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-4 py-2 text-sm font-medium text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D11A7D]"
+                    >
+                      <TelegramIcon />
+                      Telegram
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 

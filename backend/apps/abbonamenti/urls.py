@@ -3,12 +3,8 @@ from . import views
 
 urlpatterns = [
     path('piani/', views.PianiListView.as_view(), name='piani-list'),
-    path('abbonamenti/checkout/', views.CheckoutCreateView.as_view(), name='abbonamenti-checkout'),
-    path('abbonamenti/check-session/', views.CheckSessionView.as_view(), name='abbonamenti-check-session'),
+    path('abbonamenti/richiesta/', views.RichiestaAttivazioneView.as_view(), name='abbonamenti-richiesta'),
     path('abbonamenti/discount-info/', views.DiscountInfoView.as_view(), name='abbonamenti-discount-info'),
     path('promo/<slug:codice>/', views.CodicePromoValidateView.as_view(), name='codice-promo-validate'),
     path('abbonamenti/me/', views.MyAbbonamentiView.as_view(), name='abbonamenti-me'),
-    path('abbonamenti/webhook/', views.stripe_webhook, name='abbonamenti-webhook'),
-    # Webhook unificato — endpoint preferito per nuovi setup.
-    path('stripe/webhook/', views.stripe_webhook_unified, name='stripe-webhook'),
 ]

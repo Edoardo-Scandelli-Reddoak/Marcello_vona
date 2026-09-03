@@ -127,15 +127,10 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
     # Telefono visibile solo al proprietario (dashboard). Per i visitatori
     # pubblici resta vuoto: si rivela via endpoint dedicato che traccia i click.
     telefono = serializers.SerializerMethodField()
-    # Social: i link sono nascosti finché l'utente non paga lo sblocco.
-    onlyfans_url = serializers.SerializerMethodField()
-    instagram_url = serializers.SerializerMethodField()
-    facebook_url = serializers.SerializerMethodField()
-    tiktok_url = serializers.SerializerMethodField()
-    telegram_url = serializers.SerializerMethodField()
-    socials_unlocked = serializers.SerializerMethodField()
+    # Social: visibili a tutti. Fino a settembre 2026 erano a pagamento
+    # (1,90 € una tantum, app `sblocchi`); ora sono pubblici come il resto
+    # della scheda.
     has_any_social = serializers.SerializerMethodField()
-    sblocco_social_prezzo_centesimi = serializers.SerializerMethodField()
     prossima_pausa_disponibile_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
@@ -152,7 +147,7 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
             'galleria', 'video',
             'rating', 'numero_recensioni',
             'onlyfans_url', 'instagram_url', 'facebook_url', 'tiktok_url', 'telegram_url',
-            'has_any_social', 'socials_unlocked', 'sblocco_social_prezzo_centesimi',
+            'has_any_social',
             'indirizzo_pubblico_aggiornato_at',
             'in_pausa', 'pausa_iniziata_at', 'prossima_pausa_disponibile_at',
             'stato_approvazione',
@@ -160,49 +155,11 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
             'is_favorite',
         )
 
-    # ---------- helpers ----------
-    def _socials_unlocked(self, obj) -> bool:
-        request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
-        # L'escort vede SEMPRE i propri link (owner).
-        if obj.user_id == request.user.id:
-            return True
-        # Lazy import per evitare cicli all'avvio
-        from apps.sblocchi.models import user_has_unlocked_socials
-        return user_has_unlocked_socials(request.user, obj)
-
-    def _gated(self, raw_value, obj) -> str:
-        return raw_value if self._socials_unlocked(obj) else ''
-
-    # ---------- methods ----------
-    def get_onlyfans_url(self, obj):
-        return self._gated(obj.onlyfans_url, obj)
-
-    def get_instagram_url(self, obj):
-        return self._gated(obj.instagram_url, obj)
-
-    def get_facebook_url(self, obj):
-        return self._gated(obj.facebook_url, obj)
-
-    def get_tiktok_url(self, obj):
-        return self._gated(obj.tiktok_url, obj)
-
-    def get_telegram_url(self, obj):
-        return self._gated(obj.telegram_url, obj)
-
-    def get_socials_unlocked(self, obj) -> bool:
-        return self._socials_unlocked(obj)
-
     def get_has_any_social(self, obj) -> bool:
         return bool(
             obj.onlyfans_url or obj.instagram_url or obj.facebook_url
             or obj.tiktok_url or obj.telegram_url
         )
-
-    def get_sblocco_social_prezzo_centesimi(self, obj) -> int:
-        from apps.sblocchi.models import SBLOCCO_SOCIAL_PRICE_CENTS
-        return SBLOCCO_SOCIAL_PRICE_CENTS
 
     def get_is_favorite(self, obj):
         request = self.context.get('request')

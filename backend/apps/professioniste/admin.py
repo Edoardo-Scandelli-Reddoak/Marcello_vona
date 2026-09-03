@@ -42,9 +42,18 @@ class _GrantAbbonamentoForm(forms.Form):
         label='Durata (giorni)',
         help_text='Esempi: 1 (test) · 7 (settimana) · 30 (mese) · 90 (trimestre) · 180 (semestre) · 365 (anno).',
     )
+    importo_incassato = forms.DecimalField(
+        required=False, min_value=0, max_digits=8, decimal_places=2,
+        label='Importo incassato (€)',
+        help_text=(
+            'Quanto hai incassato davvero, concordato su WhatsApp (bonifico, contanti…). '
+            'Serve perché il fatturato in "Analisi dati" resti corretto. '
+            'Lascia vuoto solo se è un vero omaggio: verrà registrato 0 €.'
+        ),
+    )
 
 
-def _grant_subscription(professionista, tipo: str, durata_giorni: int):
+def _grant_subscription(professionista, tipo: str, durata_giorni: int, importo_centesimi: int = 0):
     """Crea un Abbonamento attivo per `professionista` con il `tipo`
     richiesto ('standard' o 'evidenza') e la durata in giorni.
 
@@ -89,10 +98,12 @@ def _grant_subscription(professionista, tipo: str, durata_giorni: int):
         professionista=professionista,
         piano=piano,
         stato='attivo',
-        importo_centesimi=0,
+        importo_centesimi=importo_centesimi,
         inizio=now,
         scadenza=starting_point + timedelta(days=durata_giorni),
-        payment_method='mock',
+        # importo 0 = omaggio vero; importo > 0 = pagamento concordato fuori dal
+        # sito. La distinzione tiene puliti i conti in "Analisi dati".
+        payment_method='manuale' if importo_centesimi else 'mock',
         paid_at=now,
     )
 
@@ -257,10 +268,12 @@ class ProfessionistaAdmin(ModelAdmin):
             if form.is_valid():
                 tipo = form.cleaned_data['tipo']
                 durata = form.cleaned_data['durata_giorni']
-                ab = _grant_subscription(professionista, tipo, durata)
+                importo = form.cleaned_data.get('importo_incassato') or 0
+                ab = _grant_subscription(professionista, tipo, durata, int(round(importo * 100)))
+                etichetta = 'omaggio' if not importo else f'da {importo:.2f} €'
                 messages.success(
                     request,
-                    f'Abbonamento omaggio {ab.piano.get_tipo_display()} creato per '
+                    f'Abbonamento {etichetta} {ab.piano.get_tipo_display()} creato per '
                     f'{professionista.nome} — scade il '
                     f'{ab.scadenza.strftime("%d/%m/%Y %H:%M")}.'
                 )
@@ -284,14 +297,17 @@ class ProfessionistaAdmin(ModelAdmin):
             if form.is_valid():
                 tipo = form.cleaned_data['tipo']
                 durata = form.cleaned_data['durata_giorni']
+                importo = form.cleaned_data.get('importo_incassato') or 0
+                cent = int(round(importo * 100))
                 count = 0
                 for prof in queryset:
-                    _grant_subscription(prof, tipo, durata)
+                    _grant_subscription(prof, tipo, durata, cent)
                     count += 1
                 tipo_label = dict(_GrantAbbonamentoForm.TIPO_CHOICES).get(tipo, tipo).split('—')[0].strip()
+                etichetta = 'omaggio' if not importo else f'da {importo:.2f} €'
                 self.message_user(
                     request,
-                    f'Abbonamento omaggio {tipo_label} ({durata} giorni) creato per {count} scheda/e.',
+                    f'Abbonamento {etichetta} {tipo_label} ({durata} giorni) creato per {count} scheda/e.',
                     level=messages.SUCCESS,
                 )
                 return None

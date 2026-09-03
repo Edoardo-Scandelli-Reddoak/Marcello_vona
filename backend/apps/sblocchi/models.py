@@ -7,10 +7,13 @@ SBLOCCO_SOCIAL_PRICE_CENTS = 190
 
 
 class SbloccoSocial(models.Model):
-    """Pagamento one-shot di un utente per sbloccare i link social di un'escort.
+    """STORICO. Pagamenti one-shot da 1,90 € con cui gli utenti sbloccavano i
+    link social di una scheda.
 
-    Una volta `attivo=True` (post-conferma pagamento) l'utente vede i bottoni social
-    di quell'escort in modo permanente.
+    Da settembre 2026 i social sono visibili a tutti gratuitamente: non si
+    creano piu' record e non esiste piu' un checkout. La tabella resta perche'
+    contiene incassi reali, conteggiati nel fatturato della pagina
+    "Analisi dati" dell'admin.
     """
     PAYMENT_METHOD_CHOICES = (
         ('stripe', 'Stripe'),
@@ -49,12 +52,3 @@ class SbloccoSocial(models.Model):
     @property
     def importo_eur(self) -> float:
         return self.importo_centesimi / 100.0
-
-
-def user_has_unlocked_socials(user, escort_profile) -> bool:
-    """Helper rapido — usato dal serializer del dettaglio scheda escort."""
-    if not user or not user.is_authenticated:
-        return False
-    return SbloccoSocial.objects.filter(
-        user=user, professionista=escort_profile, attivo=True
-    ).exists()

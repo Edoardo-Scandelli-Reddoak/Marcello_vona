@@ -30,12 +30,12 @@ if [ "${SKIP_SEED_DEMO:-}" != "1" ]; then
     python manage.py seed_demo || echo "seed_demo fallito (ignoro)"
 fi
 
-# Marca scaduti gli abbonamenti con scadenza nel passato. Senza un cron
-# esterno (Railway free tier non ce l'ha), almeno ad ogni deploy si fa
-# pulizia. Il filtro Professionista.objects.visible() esclude comunque le
-# scadute via scadenza__gt=now, ma marcare lo stato='scaduto' nel DB tiene
-# le notifiche/email sincronizzate e l'admin pulito.
-echo "→ Expire abbonamenti scaduti..."
+# Manutenzione abbonamenti: preavvisi di scadenza (7 e 2 giorni prima) +
+# marcatura degli scaduti. ATTENZIONE: qui gira solo a ogni deploy, che NON e'
+# una pianificazione. Va schedulato una volta al giorno con un cron job di
+# Railway, altrimenti i preavvisi partono solo quando si pubblica qualcosa e le
+# escort si accorgono di essere scadute quando sono gia' offline.
+echo "→ Manutenzione abbonamenti (preavvisi + scaduti)..."
 python manage.py expire_subscriptions || echo "expire_subscriptions fallito (ignoro)"
 
 # Backfill coordinate mancanti (lat/lng) per le schede create da admin in cui

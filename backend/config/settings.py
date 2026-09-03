@@ -267,14 +267,13 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-# Stripe (lasciate vuote in dev → checkout va in modalità mock)
-STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '').strip()
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '').strip()
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '').strip()
+# Nessun processore di pagamento collegato: i pagamenti si concordano fuori dal
+# sito (WhatsApp) e l'attivazione degli abbonamenti e' un'azione manuale
+# dell'admin. Le vecchie env STRIPE_* non vengono piu' lette.
 
 # Difesa contro whitespace/newline negli env Railway (stesso problema che ha
-# colpito DATABASE_URL): un trailing space in FRONTEND_URL fa sì che Stripe
-# rifiuti la Checkout Session con "Not a valid URL". Strip esplicito qui.
+# colpito DATABASE_URL): uno spazio finale in FRONTEND_URL produce URL rotti
+# nei link delle email. Strip esplicito qui.
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3001').strip()
 
 # Email — in dev usa la console (le email vengono stampate nei log Django).

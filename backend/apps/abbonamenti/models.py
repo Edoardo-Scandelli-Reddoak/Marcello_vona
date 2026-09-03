@@ -126,8 +126,9 @@ class Abbonamento(models.Model):
         ('annullato', 'Annullato'),
     )
     PAYMENT_METHOD_CHOICES = (
-        ('stripe', 'Stripe'),
-        ('mock', 'Mock (sviluppo)'),
+        ('manuale', 'Pagamento gestito manualmente'),
+        ('stripe', 'Stripe (storico)'),
+        ('mock', 'Omaggio / sviluppo'),
     )
 
     professionista = models.ForeignKey(
@@ -152,6 +153,17 @@ class Abbonamento(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
+    # Promemoria di scadenza gia' inviati. Servono a rendere il comando
+    # `expire_subscriptions` idempotente: se gira due volte lo stesso giorno non
+    # raddoppia gli avvisi, e se salta un giorno recupera comunque (la
+    # condizione e' "giorni residui <= soglia", non "== soglia").
+    promemoria_7_inviato_at = models.DateTimeField(
+        null=True, blank=True, verbose_name='Promemoria 7 giorni inviato il',
+    )
+    promemoria_2_inviato_at = models.DateTimeField(
+        null=True, blank=True, verbose_name='Promemoria 2 giorni inviato il',
+    )
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Abbonamento'
@@ -172,12 +184,12 @@ class Abbonamento(models.Model):
             and self.scadenza > timezone.now()
         )
 
-    def activate(self, payment_method: str = 'stripe', stripe_payment_intent_id: str = '') -> None:
-        """Marks the subscription as paid and sets inizio/scadenza.
+    def activate(self, payment_method: str = 'manuale') -> None:
+        """Marca l'abbonamento come pagato e calcola inizio/scadenza.
 
-        If the same escort profile already has an active abbonamento of the same tipo,
-        the new duration is appended on top of the existing scadenza so that pre-renewals
-        cumulate.
+        Se la stessa scheda ha gia' un abbonamento attivo dello stesso tipo, la
+        nuova durata si somma alla scadenza esistente: chi rinnova in anticipo
+        non perde giorni.
         """
         now = timezone.now()
         last = (
@@ -197,8 +209,6 @@ class Abbonamento(models.Model):
         self.scadenza = starting_point + timedelta(days=self.piano.durata_giorni)
         self.stato = 'attivo'
         self.payment_method = payment_method or self.payment_method
-        if stripe_payment_intent_id:
-            self.stripe_payment_intent_id = stripe_payment_intent_id
         self.paid_at = now
         self.importo_centesimi = self.importo_centesimi or self.piano.prezzo_centesimi
         self.save()

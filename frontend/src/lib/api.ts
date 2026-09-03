@@ -233,10 +233,11 @@ export interface Abbonamento {
   paid_at: string | null;
 }
 
-export interface CheckoutResponse {
-  mock: boolean;
-  redirect_url: string;
+export interface RichiestaAttivazione {
   abbonamento_id: number;
+  importo_centesimi: number;
+  discount_applied: boolean;
+  discount_source: 'codice' | 'promo_generale' | null;
 }
 
 export interface DiscountInfo {
@@ -251,17 +252,14 @@ export type CodicePromoValidation =
 
 export const abbonamentiApi = {
   piani: () => fetchApi('/piani/') as Promise<PianoAbbonamento[]>,
-  checkout: (piano_id: number, codice_promo?: string) =>
-    fetchApi('/abbonamenti/checkout/', {
+  // Registra la richiesta di attivazione di un piano. Non incassa nulla e non
+  // attiva niente: serve solo a lasciare all'admin la traccia di cosa e' stato
+  // chiesto e a quale prezzo. Il pagamento si concorda su WhatsApp.
+  richiediAttivazione: (piano_id: number, codice_promo?: string) =>
+    fetchApi('/abbonamenti/richiesta/', {
       method: 'POST',
       body: JSON.stringify(codice_promo ? { piano_id, codice_promo } : { piano_id }),
-    }) as Promise<CheckoutResponse>,
-  checkSession: (params: { session_id?: string; abbonamento_id?: number }) => {
-    const q = new URLSearchParams();
-    if (params.session_id) q.set('session_id', params.session_id);
-    if (params.abbonamento_id) q.set('abbonamento_id', String(params.abbonamento_id));
-    return fetchApi(`/abbonamenti/check-session/?${q.toString()}`) as Promise<Abbonamento>;
-  },
+    }) as Promise<RichiestaAttivazione>,
   miei: () => fetchApi('/abbonamenti/me/') as Promise<Abbonamento[]>,
   discountInfo: () => fetchApi('/abbonamenti/discount-info/') as Promise<DiscountInfo>,
   validatePromo: (codice: string) =>
@@ -289,19 +287,9 @@ export const notificheApi = {
     fetchApi('/notifiche/leggi-tutte/', { method: 'POST' }),
 };
 
-// Sblocchi social
-export const sblocchiApi = {
-  checkout: (escort_id: number) =>
-    fetchApi('/sblocchi/checkout/', {
-      method: 'POST',
-      body: JSON.stringify({ escort_id }),
-    }) as Promise<{
-      mock: boolean;
-      redirect_url: string | null;
-      sblocco_id: number;
-      already_unlocked?: boolean;
-    }>,
-};
+// Sblocchi social — rimossi del tutto: i link social sono pubblici sulla
+// scheda, senza pagamento ne' login. La tabella dei vecchi acquisti da 1,90 €
+// resta solo come storico contabile, lato admin.
 
 // Preferiti
 export const preferitiApi = {
