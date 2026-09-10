@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -33,18 +34,57 @@ class ProfessionistaQuerySet(models.QuerySet):
 
 
 class Categoria(models.Model):
-    CATEGORIA_CHOICES = (
-        ('donna', 'Donna'),
-        ('trans', 'Trans'),
-        ('coppia', 'Coppia'),
+    """Categoria di una scheda (Donna, Trans, Coppia, ...).
+
+    L'elenco NON e' fisso: si aggiungono nuove categorie dall'admin. `nome` e'
+    lo slug tecnico (usato in URL e query di filtro), `label` e' il testo
+    mostrato sul sito. Lasciando vuoto uno dei due viene derivato dall'altro.
+    """
+
+    nome = models.SlugField(
+        max_length=50, unique=True, blank=True,
+        verbose_name='Slug',
+        help_text='Identificativo tecnico usato negli URL e nei filtri (es. "donna"). '
+                  'Se lo lasci vuoto viene generato dall\'etichetta.',
     )
-    nome = models.CharField(max_length=50, choices=CATEGORIA_CHOICES, unique=True)
+    label = models.CharField(
+        max_length=50, blank=True,
+        verbose_name='Etichetta',
+        help_text='Nome mostrato sul sito (es. "Donna").',
+    )
+    ordine = models.PositiveIntegerField(
+        default=100,
+        verbose_name='Ordine',
+        help_text='Numero piu\' basso = mostrata prima nei filtri e nei menu a tendina.',
+    )
 
     class Meta:
+        verbose_name = 'Categoria'
         verbose_name_plural = 'Categorie'
+        ordering = ('ordine', 'label', 'nome')
 
     def __str__(self):
-        return self.get_nome_display()
+        return self.label or self.nome
+
+    def _completa_campi_vuoti(self):
+        """Deriva slug da etichetta (e viceversa) quando uno dei due manca."""
+        if not self.nome and self.label:
+            self.nome = slugify(self.label)[:50]
+        if not self.label and self.nome:
+            self.label = self.nome.replace('-', ' ').replace('_', ' ').title()
+
+    def clean(self):
+        # Gira PRIMA di validate_unique(): cosi' l'unicita' viene controllata
+        # sullo slug generato e l'admin mostra un errore leggibile invece di
+        # far esplodere un IntegrityError.
+        super().clean()
+        self._completa_campi_vuoti()
+        if not self.nome:
+            raise ValidationError({'label': "Inserisci l'etichetta della categoria."})
+
+    def save(self, *args, **kwargs):
+        self._completa_campi_vuoti()
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):

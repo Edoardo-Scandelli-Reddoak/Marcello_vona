@@ -8,7 +8,8 @@ import PasswordInput from '@/components/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { escortApi, tagsApi, type Categoria } from '@/lib/api';
+import { escortApi, tagsApi } from '@/lib/api';
+import { useCategorie } from '@/hooks/useCategorie';
 import { whatsappHref } from '@/lib/company';
 import { MessageCircle } from 'lucide-react';
 
@@ -30,6 +31,7 @@ const steps = [
 export default function RegistrazionePage() {
   const router = useRouter();
   const { user, register } = useAuth();
+  const categorie = useCategorie();
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +61,6 @@ export default function RegistrazionePage() {
   // Step 2
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [categorieOpts, setCategorieOpts] = useState<Categoria[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [bio, setBio] = useState('');
@@ -104,7 +105,6 @@ export default function RegistrazionePage() {
 
   useEffect(() => {
     tagsApi.list().then(setAvailableTags).catch(() => setAvailableTags([]));
-    escortApi.categorie().then(setCategorieOpts).catch(() => setCategorieOpts([]));
   }, []);
 
   const toggleTag = (id: number) => {
@@ -351,16 +351,16 @@ export default function RegistrazionePage() {
               onChange={(e) => setCategoria(e.target.value)}
               className="w-full h-10 rounded-lg border border-[#1A1A1A]/10 px-3 text-sm"
               required
-              disabled={categorieOpts.length === 0}
+              disabled={categorie.length === 0}
             >
               <option value="">Seleziona...</option>
-              {categorieOpts.map((c) => (
+              {categorie.map((c) => (
                 <option key={c.id} value={String(c.id)}>
                   {c.label}
                 </option>
               ))}
             </select>
-            {categorieOpts.length === 0 && (
+            {categorie.length === 0 && (
               <p className="mt-1 text-xs text-[#1A1A1A]/40">Caricamento categorie...</p>
             )}
           </div>

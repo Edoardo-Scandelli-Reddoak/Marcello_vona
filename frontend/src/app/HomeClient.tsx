@@ -13,10 +13,12 @@ import StarRating from '@/components/StarRating';
 import PromoBanner from '@/components/PromoBanner';
 import { escortApi, recensioniApi, bannersApi, provinceApi, type HeroSettings } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useCategorie } from '@/hooks/useCategorie';
 
 export default function HomeClient({ initialHero }: { initialHero: HeroSettings | null }) {
   const router = useRouter();
   const geo = useGeolocation();
+  const categorie = useCategorie();
   const [search, setSearch] = useState('');
   const [categoria, setCategoria] = useState('');
   const [distanza, setDistanza] = useState('');
@@ -122,9 +124,11 @@ export default function HomeClient({ initialHero }: { initialHero: HeroSettings 
               className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
             >
               <option value="">Tutte le categorie</option>
-              <option value="donna">Donna</option>
-              <option value="trans">Trans</option>
-              <option value="coppia">Coppia</option>
+              {categorie.map((c) => (
+                <option key={c.id} value={c.nome}>
+                  {c.label}
+                </option>
+              ))}
             </select>
             <select
               value={distanza}

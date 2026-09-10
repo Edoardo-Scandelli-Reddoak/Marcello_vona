@@ -9,12 +9,14 @@ import { Input } from '@/components/ui/input';
 import EscortCard from '@/components/EscortCard';
 import { escortApi, provinceApi } from '@/lib/api';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { useCategorie } from '@/hooks/useCategorie';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function EscortPage() {
   const searchParams = useSearchParams();
   const geo = useGeolocation();
+  const categorie = useCategorie();
 
   const [view, setView] = useState<'list' | 'map'>('list');
   const [results, setResults] = useState<any[]>([]);
@@ -152,9 +154,11 @@ export default function EscortPage() {
             className="h-10 rounded-lg border border-[#1A1A1A]/10 bg-white px-3 text-sm"
           >
             <option value="">Categoria</option>
-            <option value="donna">Donna</option>
-            <option value="trans">Trans</option>
-            <option value="coppia">Coppia</option>
+            {categorie.map((c) => (
+              <option key={c.id} value={c.nome}>
+                {c.label}
+              </option>
+            ))}
           </select>
           <select
             value={distanza}

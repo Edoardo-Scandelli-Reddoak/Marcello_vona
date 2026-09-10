@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from django.db import models
-from django.db.models import Case, Count, IntegerField, Value, When
+from django.db.models import Count
 from .models import (
     Professionista, Categoria, Tag,
     FotoProfessionista, MAX_FOTO_GALLERIA,
@@ -402,15 +402,9 @@ def reveal_telefono(request, slug):
 
 
 class CategoriaListView(generics.ListAPIView):
-    queryset = Categoria.objects.annotate(
-        _ord=Case(
-            When(nome__in=['donna', 'massaggi'], then=Value(0)),
-            When(nome__in=['trans', 'yoga'], then=Value(1)),
-            When(nome__in=['coppia', 'relax'], then=Value(2)),
-            default=Value(3),
-            output_field=IntegerField(),
-        )
-    ).order_by('_ord')
+    # L'ordine e' quello del campo `ordine` (Categoria.Meta.ordering): si
+    # cambia dall'admin, non serve toccare il codice per una nuova categoria.
+    queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = None

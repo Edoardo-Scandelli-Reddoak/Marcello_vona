@@ -6,6 +6,10 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    // src/lib e src/hooks contengono classi (es. la palette delle categorie
+    // in lib/categorie.ts): senza questi glob Tailwind non le genererebbe.
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/hooks/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {

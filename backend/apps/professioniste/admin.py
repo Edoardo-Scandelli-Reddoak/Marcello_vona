@@ -397,14 +397,17 @@ def _escort_block(escort_qs, filter_param: str, obj_id: int):
 
 @admin.register(Categoria)
 class CategoriaAdmin(ModelAdmin):
-    list_display = ('nome', 'count_escort')
+    # Le categorie sono libere: si aggiungono da qui, basta l'etichetta.
+    # Lo slug si genera da solo (Categoria.clean) se lo lasci vuoto.
+    list_display = ('label', 'nome', 'ordine', 'count_escort')
+    list_editable = ('ordine',)
+    search_fields = ('nome', 'label')
     readonly_fields = ('escort_list',)
-    search_fields = ('nome',)
 
     def get_fields(self, request, obj=None):
         if obj is None:
-            return ('nome',)
-        return ('nome', 'escort_list')
+            return ('label', 'nome', 'ordine')
+        return ('label', 'nome', 'ordine', 'escort_list')
 
     def count_escort(self, obj):
         return obj.escort.count()

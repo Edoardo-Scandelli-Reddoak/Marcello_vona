@@ -21,12 +21,18 @@ def canonical_categoria_slug(nome: str) -> str:
     return LEGACY_CATEGORIA_SLUG.get(nome, nome)
 
 
-def display_categoria_label(nome: str) -> str:
-    if not nome:
+def categoria_label(categoria) -> str:
+    """Etichetta da mostrare all'utente.
+
+    Usa `label` del modello; se manca (categoria creata a mano senza
+    etichetta) ricade sullo slug reso leggibile.
+    """
+    if categoria is None:
         return ''
-    slug = canonical_categoria_slug(nome)
-    labels = dict(Categoria.CATEGORIA_CHOICES)
-    return labels.get(slug, slug.replace('_', ' ').title())
+    if categoria.label:
+        return categoria.label
+    slug = canonical_categoria_slug(categoria.nome)
+    return slug.replace('-', ' ').replace('_', ' ').title()
 
 
 def _calcola_eta(dob: date) -> int:
@@ -62,7 +68,7 @@ class CategoriaSerializer(serializers.ModelSerializer):
         fields = ('id', 'nome', 'label')
 
     def get_label(self, obj):
-        return display_categoria_label(obj.nome)
+        return categoria_label(obj)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -108,7 +114,7 @@ class ProfessionistaCardSerializer(serializers.ModelSerializer):
         return obj.preferito_da.filter(user=request.user).exists()
 
     def get_categoria_nome(self, obj):
-        return display_categoria_label(obj.categoria.nome)
+        return categoria_label(obj.categoria)
 
     def get_categoria_slug(self, obj):
         return canonical_categoria_slug(obj.categoria.nome)
@@ -184,7 +190,7 @@ class ProfessionistaDetailSerializer(serializers.ModelSerializer):
         return ', '.join(filter(None, parts))
 
     def get_categoria_nome(self, obj):
-        return display_categoria_label(obj.categoria.nome)
+        return categoria_label(obj.categoria)
 
     def get_categoria_slug(self, obj):
         return canonical_categoria_slug(obj.categoria.nome)

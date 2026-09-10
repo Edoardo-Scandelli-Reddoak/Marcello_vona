@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Star, MapPin, Heart, MessageCircle, Phone } from 'lucide-react';
 import { mediaUrl, preferitiApi, escortApi } from '@/lib/api';
+import { labelCategoria, stileCategoria } from '@/lib/categorie';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
 
@@ -33,37 +34,14 @@ interface EscortCardProps {
   escort: EscortCardData;
 }
 
-const categoriaStyle: Record<string, { bg: string; text: string }> = {
-  donna: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
-  trans: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
-  coppia: { bg: 'bg-amber-50', text: 'text-amber-700' },
-};
-
-/** Slug legacy (pre-migrazione) ancora nei JSON in cache → stesso stile delle categorie nuove */
-const LEGACY_SLUG_MAP: Record<string, keyof typeof categoriaStyle> = {
-  massaggi: 'donna',
-  yoga: 'trans',
-  relax: 'coppia',
-};
-
-const LABEL_LEGACY: Record<string, string> = {
-  Massaggi: 'Donna',
-  Yoga: 'Trans',
-  Relax: 'Coppia',
-  massaggi: 'Donna',
-  yoga: 'Trans',
-  relax: 'Coppia',
-};
-
 export default function EscortCard({ escort }: EscortCardProps) {
   const p = escort;
   const { user } = useAuth();
   const [isFav, setIsFav] = useState<boolean>(Boolean((p as EscortCardData & { is_favorite?: boolean }).is_favorite));
   const [favLoading, setFavLoading] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const slugKey = LEGACY_SLUG_MAP[p.categoria_slug] ?? p.categoria_slug;
-  const style = categoriaStyle[slugKey] || categoriaStyle.donna;
-  const categoriaBadge = LABEL_LEGACY[p.categoria_nome] ?? LABEL_LEGACY[p.categoria_slug] ?? p.categoria_nome;
+  const style = stileCategoria(p.categoria_slug);
+  const categoriaBadge = labelCategoria(p.categoria_nome, p.categoria_slug);
 
   const handleFav = async (e: React.MouseEvent) => {
     e.preventDefault();

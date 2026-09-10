@@ -12,29 +12,9 @@ import StarRating from '@/components/StarRating';
 import { escortApi, recensioniApi, preferitiApi, mediaUrl } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import AuthRequiredModal from '@/components/AuthRequiredModal';
+import { labelCategoria, stileCategoria } from '@/lib/categorie';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
-
-const categoriaStyle: Record<string, { bg: string; text: string }> = {
-  donna: { bg: 'bg-[#E91E8C]/10', text: 'text-[#E91E8C]' },
-  trans: { bg: 'bg-[#1A1A1A]/8', text: 'text-[#1A1A1A]' },
-  coppia: { bg: 'bg-amber-50', text: 'text-amber-700' },
-};
-
-const LEGACY_SLUG_MAP: Record<string, keyof typeof categoriaStyle> = {
-  massaggi: 'donna',
-  yoga: 'trans',
-  relax: 'coppia',
-};
-
-const LABEL_LEGACY: Record<string, string> = {
-  Massaggi: 'Donna',
-  Yoga: 'Trans',
-  Relax: 'Coppia',
-  massaggi: 'Donna',
-  yoga: 'Trans',
-  relax: 'Coppia',
-};
 
 export default function SchedaEscortPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -186,10 +166,8 @@ export default function SchedaEscortPage() {
     { immagine: p.foto_profilo },
     ...(p.galleria || []),
   ];
-  const slugKey = LEGACY_SLUG_MAP[p.categoria_slug] ?? p.categoria_slug;
-  const style = categoriaStyle[slugKey] || categoriaStyle.donna;
-  const categoriaBadge =
-    LABEL_LEGACY[p.categoria_nome] ?? LABEL_LEGACY[p.categoria_slug] ?? p.categoria_nome;
+  const style = stileCategoria(p.categoria_slug);
+  const categoriaBadge = labelCategoria(p.categoria_nome, p.categoria_slug);
 
   return (
     <div className="min-h-screen bg-[#F8F7F5] pb-20 sm:pb-0">
