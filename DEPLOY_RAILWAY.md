@@ -67,13 +67,14 @@ Il progetto è un monorepo con **2 servizi** (Django backend + Next.js frontend)
    In alternativa, Railway recente passa automaticamente tutte le variabili come
    build args — verifica nel pannello.
 
-   Opzionali (mappa). Se non impostate si usano le basemap CARTO senza chiave.
-   Da impostare solo per passare a un provider con API key:
+   Opzionali (mappa). Se non impostate si usa OpenFreeMap, che non chiede
+   registrazione ne' chiave. Da impostare solo per passare a un provider a
+   pagamento (MapTiler, CARTO, Stadia...):
 
    | Nome | Valore |
    |---|---|
-   | `NEXT_PUBLIC_MAP_TILE_URL` | es. `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=<chiave>` |
-   | `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` | HTML di attribuzione richiesto dal provider |
+   | `NEXT_PUBLIC_MAP_STYLE_URL` | URL dello style JSON del provider, es. `https://api.maptiler.com/maps/streets-v2/style.json?key=<chiave>` |
+   | `NEXT_PUBLIC_MAP_ATTRIBUTION` | HTML di attribuzione richiesto dal provider |
 
    Anche queste vanno passate come build args.
 
