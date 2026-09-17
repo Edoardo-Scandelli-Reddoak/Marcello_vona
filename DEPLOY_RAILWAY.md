@@ -67,6 +67,16 @@ Il progetto è un monorepo con **2 servizi** (Django backend + Next.js frontend)
    In alternativa, Railway recente passa automaticamente tutte le variabili come
    build args — verifica nel pannello.
 
+   Opzionali (mappa). Se non impostate si usano le basemap CARTO senza chiave.
+   Da impostare solo per passare a un provider con API key:
+
+   | Nome | Valore |
+   |---|---|
+   | `NEXT_PUBLIC_MAP_TILE_URL` | es. `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=<chiave>` |
+   | `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` | HTML di attribuzione richiesto dal provider |
+
+   Anche queste vanno passate come build args.
+
 5. **Deploy** → builda Next.js e lo avvia su `$PORT`.
 
 ---
