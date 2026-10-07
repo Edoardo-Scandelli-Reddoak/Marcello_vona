@@ -1,12 +1,53 @@
 from datetime import date, timedelta
 from django import forms
 from django.contrib import admin, messages
+from django.db.models import Max, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from unfold.admin import ModelAdmin, TabularInline
+from apps.abbonamenti.models import Abbonamento
 from .models import Professionista, FotoProfessionista, VideoProfessionista, Categoria, Tag
+
+# Abbonamenti "veri": pagati o concessi in omaggio. Esclude le richieste mai
+# pagate (in_attesa) e quelle annullate.
+STATI_ABBONAMENTO_AVUTO = ('attivo', 'scaduto')
+
+
+class AbbonamentoFilter(admin.SimpleListFilter):
+    """Chi ricontattare per il rinnovo: escort con l'abbonamento scaduto.
+
+    "Attivo" usa la stessa regola del sito (stato attivo e scadenza futura),
+    quindi coincide con chi e' visibile, a parte le schede in pausa o non
+    approvate. Chi non ha mai avuto un abbonamento sta in "Mai attivato" e
+    non finisce tra gli scaduti.
+    """
+    title = 'Abbonamento'
+    parameter_name = 'abbonamento'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('scaduto', 'Scaduto (non rinnovato)'),
+            ('attivo', 'Attivo'),
+            ('mai', 'Mai attivato'),
+        )
+
+    def queryset(self, request, queryset):
+        attivi = Abbonamento.objects.filter(
+            stato='attivo', scadenza__gt=timezone.now(),
+        ).values('professionista_id')
+        avuti = Abbonamento.objects.filter(
+            stato__in=STATI_ABBONAMENTO_AVUTO, scadenza__isnull=False,
+        ).values('professionista_id')
+        valore = self.value()
+        if valore == 'attivo':
+            return queryset.filter(id__in=attivi)
+        if valore == 'scaduto':
+            return queryset.filter(id__in=avuti).exclude(id__in=attivi)
+        if valore == 'mai':
+            return queryset.exclude(id__in=avuti)
+        return queryset
 
 
 class FotoInline(TabularInline):
@@ -110,8 +151,11 @@ def _grant_subscription(professionista, tipo: str, durata_giorni: int, importo_c
 
 @admin.register(Professionista)
 class ProfessionistaAdmin(ModelAdmin):
-    list_display = ('nome', 'categoria', 'provincia', 'citta', 'stato_approvazione', 'in_pausa', 'eta', 'rating_medio', 'created_at')
-    list_filter = ('stato_approvazione', 'in_pausa', 'categoria', 'provincia', 'tags')
+    list_display = (
+        'nome', 'categoria', 'provincia', 'citta', 'stato_approvazione', 'in_pausa',
+        'scadenza_abbonamento', 'eta', 'rating_medio', 'created_at',
+    )
+    list_filter = (AbbonamentoFilter, 'stato_approvazione', 'in_pausa', 'categoria', 'provincia', 'tags')
     search_fields = (
         'nome', 'citta', 'provincia',
         'user__email', 'onlyfans_url', 'instagram_url', 'facebook_url', 'tiktok_url', 'telegram_url',
@@ -131,6 +175,23 @@ class ProfessionistaAdmin(ModelAdmin):
             (today.month, today.day) < (obj.data_nascita.month, obj.data_nascita.day)
         )
     eta.short_description = 'Età'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            ultima_scadenza=Max(
+                'abbonamenti__scadenza',
+                filter=Q(abbonamenti__stato__in=STATI_ABBONAMENTO_AVUTO),
+            ),
+        )
+
+    @admin.display(description='Scadenza abbonamento', ordering='ultima_scadenza')
+    def scadenza_abbonamento(self, obj):
+        if not obj.ultima_scadenza:
+            return '-'
+        data = timezone.localtime(obj.ultima_scadenza).strftime('%d/%m/%Y')
+        if obj.ultima_scadenza <= timezone.now():
+            return format_html('<span style="color:#dc2626">{} (scaduto)</span>', data)
+        return data
     inlines = [FotoInline, VideoInline]
     actions = ['approva_escort', 'rifiuta_escort', 'concedi_abbonamento_omaggio']
 
