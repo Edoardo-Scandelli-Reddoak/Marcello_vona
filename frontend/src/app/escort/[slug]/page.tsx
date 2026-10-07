@@ -45,6 +45,14 @@ export default function SchedaEscortPage() {
   // Gallery
   const [activeImage, setActiveImage] = useState(0);
 
+  // Arrivando da una lista scrollata Next non riporta in cima (la pagina di
+  // caricamento è corta, lo scroll finisce in fondo a quella). Poi il contenuto
+  // si inserisce sopra il footer e lo scroll anchoring del browser segue il
+  // footer: la scheda si apriva dal fondo. Torno in cima prima che arrivi.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
