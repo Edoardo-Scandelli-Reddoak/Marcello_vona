@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
 import { escortApi, recensioniApi, abbonamentiApi, notificheApi, tagsApi, mediaUrl, MAX_VIDEO_PER_ESCORT, MAX_FOTO_GALLERIA, type Abbonamento, type Notifica, type EscortVideo, type EscortFoto } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { Phone, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Image as ImageIcon, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
+import { Phone, Camera, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Image as ImageIcon, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   in_attesa: { label: 'In attesa di verifica', className: 'bg-yellow-100 text-yellow-800' },
@@ -56,6 +56,11 @@ export default function DashboardPage() {
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoError, setVideoError] = useState('');
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Foto profilo (copertina): si carica subito, separata dal form "Modifica"
+  const [copertinaUploading, setCopertinaUploading] = useState(false);
+  const [copertinaError, setCopertinaError] = useState('');
+  const copertinaInputRef = useRef<HTMLInputElement>(null);
 
   // Foto galleria
   const [fotoList, setFotoList] = useState<EscortFoto[]>([]);
@@ -341,13 +346,66 @@ export default function DashboardPage() {
       {/* Scheda personale */}
       <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
         <div className="flex items-start gap-4 sm:gap-6">
-          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full sm:h-20 sm:w-20">
-            <Image
-              src={mediaUrl(profilo.foto_profilo)}
-              alt={profilo.nome}
-              fill
-              className="object-cover"
-              sizes="80px"
+          <div className="flex flex-shrink-0 flex-col items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="Cambia foto profilo"
+              title="Cambia foto profilo"
+              onClick={() => copertinaInputRef.current?.click()}
+              disabled={copertinaUploading}
+              className="group relative h-16 w-16 overflow-hidden rounded-full sm:h-20 sm:w-20"
+            >
+              <Image
+                src={mediaUrl(profilo.foto_profilo)}
+                alt={profilo.nome}
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
+              <span
+                className={`absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity ${
+                  copertinaUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
+              >
+                {copertinaUploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Camera className="h-5 w-5" />
+                )}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => copertinaInputRef.current?.click()}
+              disabled={copertinaUploading}
+              className="text-xs font-medium text-[#E91E8C] hover:underline disabled:opacity-50"
+            >
+              Cambia foto
+            </button>
+            <input
+              ref={copertinaInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setCopertinaError('');
+                setCopertinaUploading(true);
+                try {
+                  const fd = new FormData();
+                  fd.append('foto_profilo', file);
+                  const updated = await escortApi.updateDashboard(fd);
+                  // La PATCH risponde con i soli campi modificabili: aggiorno
+                  // solo la foto per non perdere il resto della scheda.
+                  setProfilo((prev: any) => ({ ...prev, foto_profilo: updated.foto_profilo }));
+                } catch (err: any) {
+                  setCopertinaError(err.message || 'Caricamento fallito.');
+                } finally {
+                  setCopertinaUploading(false);
+                  if (copertinaInputRef.current) copertinaInputRef.current.value = '';
+                }
+              }}
             />
           </div>
           <div className="flex-1">
@@ -621,6 +679,9 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+        {copertinaError && (
+          <p className="mt-3 text-sm text-red-600">{copertinaError}</p>
+        )}
       </div>
 
       {/* Indirizzo pubblico (modificabile) */}
@@ -701,7 +762,7 @@ export default function DashboardPage() {
           <div className="flex-1">
             <h3 className="font-semibold text-[#1A1A1A]">La tua galleria foto</h3>
             <p className="mt-1 text-sm text-[#1A1A1A]/60">
-              Puoi caricare fino a {MAX_FOTO_GALLERIA} foto nella tua galleria pubblica. La foto profilo (mostrata in cima alla scheda) si modifica separatamente.
+              Puoi caricare fino a {MAX_FOTO_GALLERIA} foto nella tua galleria pubblica. La foto profilo si cambia toccandola nella tua scheda qui sopra.
             </p>
           </div>
         </div>
