@@ -50,7 +50,7 @@ class ProfessionistaListView(generics.ListAPIView):
     ordering_fields = ['created_at']
 
     def get_queryset(self):
-        qs = Professionista.objects.visible().select_related('categoria')
+        qs = Professionista.objects.visible().select_related('categoria').prefetch_related('galleria')
         lat = self.request.query_params.get('lat')
         lng = self.request.query_params.get('lng')
         distance = self.request.query_params.get('distanza')
@@ -100,7 +100,7 @@ class ProfessionistaFeaturedView(generics.ListAPIView):
         import random
         import time
 
-        qs = list(Professionista.objects.featured_evidenza().select_related('categoria'))
+        qs = list(Professionista.objects.featured_evidenza().select_related('categoria').prefetch_related('galleria'))
         seed = int(time.time()) // FEATURED_ROTATION_SECONDS
         random.Random(seed).shuffle(qs)
         return qs[:FEATURED_LIMIT]
@@ -122,6 +122,7 @@ class ProfessionistaNearbyView(generics.ListAPIView):
         qs = (
             Professionista.objects.visible()
             .select_related('categoria')
+            .prefetch_related('galleria')
             .order_by('-created_at')
         )
 
@@ -443,4 +444,4 @@ class MapEscortView(generics.ListAPIView):
         return Professionista.objects.visible().filter(
             latitudine__isnull=False,
             longitudine__isnull=False,
-        ).select_related('categoria')
+        ).select_related('categoria').prefetch_related('galleria')

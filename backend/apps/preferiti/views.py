@@ -21,6 +21,7 @@ class PreferitiListView(generics.ListAPIView):
             .visible()
             .filter(id__in=ids)
             .select_related('categoria')
+            .prefetch_related('galleria')
             .order_by('-preferito_da__created_at')
         )
 

@@ -95,11 +95,14 @@ class ProfessionistaCardSerializer(serializers.ModelSerializer):
     rating = serializers.FloatField(source='rating_medio', read_only=True)
     numero_recensioni = serializers.IntegerField(read_only=True)
     is_favorite = serializers.SerializerMethodField()
+    # Foto scorribili nella card dopo la foto profilo. Le view che usano questo
+    # serializer fanno prefetch_related('galleria'), altrimenti è una query a card.
+    galleria = FotoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Professionista
         fields = (
-            'id', 'nome', 'slug', 'foto_profilo', 'stato',
+            'id', 'nome', 'slug', 'foto_profilo', 'galleria', 'stato',
             'categoria_nome', 'categoria_slug',
             'citta', 'zona', 'provincia', 'latitudine', 'longitudine',
             'disponibilita',

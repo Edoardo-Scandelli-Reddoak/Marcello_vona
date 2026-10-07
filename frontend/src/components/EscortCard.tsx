@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, MapPin, Heart, MessageCircle, Phone } from 'lucide-react';
+import { Star, MapPin, Heart, MessageCircle, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { mediaUrl, preferitiApi, escortApi } from '@/lib/api';
 import { labelCategoria, stileCategoria } from '@/lib/categorie';
 import { useAuth } from '@/context/AuthContext';
@@ -17,6 +17,8 @@ export interface EscortCardData {
   nome: string;
   slug: string;
   foto_profilo: string;
+  /** Foto della galleria, scorribili nella card dopo la foto profilo. */
+  galleria?: { id: number; immagine: string }[];
   categoria_nome: string;
   categoria_slug: string;
   citta: string;
@@ -42,6 +44,28 @@ export default function EscortCard({ escort }: EscortCardProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const style = stileCategoria(p.categoria_slug);
   const categoriaBadge = labelCategoria(p.categoria_nome, p.categoria_slug);
+
+  // Carosello foto: da telefono si scorre col dito (scroll orizzontale con
+  // snap, nativo), da PC con le frecce che compaiono al passaggio del mouse.
+  const foto = [p.foto_profilo, ...(p.galleria ?? []).map((f) => f.immagine)];
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [fotoAttiva, setFotoAttiva] = useState(0);
+
+  const onScrollFoto = () => {
+    const el = scrollerRef.current;
+    if (!el || !el.clientWidth) return;
+    setFotoAttiva(Math.round(el.scrollLeft / el.clientWidth));
+  };
+
+  const vaiAFoto = (e: React.MouseEvent, delta: number) => {
+    // Le frecce stanno dentro il Link della card: niente navigazione.
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollerRef.current;
+    if (!el) return;
+    const i = Math.min(Math.max(fotoAttiva + delta, 0), foto.length - 1);
+    el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+  };
 
   const handleFav = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -94,14 +118,52 @@ export default function EscortCard({ escort }: EscortCardProps) {
     <Link href={`/escort/${p.slug}`} className="group block">
       <div className="overflow-hidden rounded-2xl bg-white border border-[#1A1A1A]/[0.06] transform-gpu will-change-transform [backface-visibility:hidden] transition-[transform,box-shadow] duration-300 ease-out hover:shadow-xl hover:shadow-[#E91E8C]/[0.06] hover:-translate-y-1">
         <div className="relative aspect-[3/4] overflow-hidden">
-          <Image
-            src={mediaUrl(p.foto_profilo)}
-            alt={p.nome}
-            fill
-            className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-out group-hover:scale-105"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-          />
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div
+            ref={scrollerRef}
+            onScroll={onScrollFoto}
+            className="flex h-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {foto.map((src, i) => (
+              <div key={`${i}-${src}`} className="relative h-full w-full flex-shrink-0 snap-start snap-always">
+                <Image
+                  src={mediaUrl(src)}
+                  alt={i === 0 ? p.nome : `${p.nome} — foto ${i + 1}`}
+                  fill
+                  draggable={false}
+                  className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-out group-hover:scale-105"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                />
+              </div>
+            ))}
+          </div>
+          {/* Gli overlay sopra la foto non devono intercettare il dito,
+              altrimenti lo swipe partito sul nome non scorre le foto. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+          {foto.length > 1 && (
+            <>
+              {fotoAttiva > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => vaiAFoto(e, -1)}
+                  aria-label="Foto precedente"
+                  className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/85 p-1.5 text-[#1A1A1A] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-white group-hover:opacity-100 [@media(hover:hover)]:block"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              )}
+              {fotoAttiva < foto.length - 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => vaiAFoto(e, 1)}
+                  aria-label="Foto successiva"
+                  className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/85 p-1.5 text-[#1A1A1A] opacity-0 shadow-sm transition-opacity duration-200 hover:bg-white group-hover:opacity-100 [@media(hover:hover)]:block"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              )}
+            </>
+          )}
 
           <button
             className="absolute right-3 top-3 rounded-full bg-white/80 p-2 backdrop-blur-sm transform-gpu transition-[transform,background-color] duration-200 ease-out hover:bg-white hover:scale-110 disabled:opacity-50"
@@ -116,13 +178,25 @@ export default function EscortCard({ escort }: EscortCardProps) {
             />
           </button>
 
-          <div className="absolute left-3 top-3">
+          <div className="pointer-events-none absolute left-3 top-3">
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase backdrop-blur-sm ${style.bg} ${style.text}`}>
               {categoriaBadge}
             </span>
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 p-4">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+            {foto.length > 1 && (
+              <div className="mb-2 flex justify-center gap-1" aria-hidden="true">
+                {foto.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-200 ${
+                      i === fotoAttiva ? 'w-4 bg-white' : 'w-1.5 bg-white/55'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
             <h3 className="text-lg font-bold leading-tight text-white drop-shadow-sm">
               {p.nome}
             </h3>
