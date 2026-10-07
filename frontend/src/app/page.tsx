@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { HeroSettings } from '@/lib/api';
 import HomeClient from './HomeClient';
 
@@ -20,6 +21,12 @@ async function getHero(): Promise<HeroSettings | null> {
     return null;
   }
 }
+
+// Canonical solo sulla home: messo nel layout veniva ereditato da tutte le
+// pagine, che così dicevano a Google di essere un duplicato della home.
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 export default async function HomePage() {
   const hero = await getHero();

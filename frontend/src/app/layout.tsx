@@ -23,9 +23,6 @@ export const metadata: Metadata = {
     'Escort Bella è la directory italiana di escort, trans e coppie. Sfoglia profili verificati, leggi recensioni reali e trova la persona giusta nella tua zona in pochi click.',
   applicationName: 'Escort Bella',
   keywords: ['escort', 'escort italia', 'directory escort', 'trans', 'coppie', 'donne', 'recensioni'],
-  alternates: {
-    canonical: '/',
-  },
   icons: {
     // Favicon brand finale (public/faviconescortfinale.svg) — versione
     // quadrata 221×221, sostituisce la vecchia favicon-escort.svg che era
