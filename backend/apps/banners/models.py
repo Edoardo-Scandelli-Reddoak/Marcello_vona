@@ -42,9 +42,22 @@ class Banner(models.Model):
         verbose_name='Posizione',
         help_text='Dove viene mostrato il banner.',
     )
-    titolo = models.CharField(max_length=200)
+    titolo = models.CharField(
+        max_length=200, blank=True,
+        help_text='Lascia vuoto se l\'immagine contiene già il testo.',
+    )
     descrizione = models.TextField(blank=True)
     immagine = models.ImageField(upload_to='banners/', blank=True, null=True)
+    link = models.CharField(
+        max_length=500, blank=True,
+        validators=[validate_button_link],
+        verbose_name='Link del banner',
+        help_text=(
+            'Cliccando in qualsiasi punto del banner si apre questo link, anche '
+            'senza bottone. URL completo (es. https://…, mailto:… oppure tel:…). '
+            'Lascia vuoto se il banner non deve essere cliccabile.'
+        ),
+    )
     button_testo = models.CharField(
         max_length=100, blank=True, verbose_name='Testo bottone',
         help_text='Lascia vuoto per non mostrare il bottone.',
@@ -53,7 +66,10 @@ class Banner(models.Model):
         max_length=500, blank=True,
         validators=[validate_button_link],
         verbose_name='Link bottone',
-        help_text='URL completo (es. https://…, mailto:… oppure tel:…).',
+        help_text=(
+            'URL completo (es. https://…, mailto:… oppure tel:…). '
+            'Lascia vuoto per usare il link del banner.'
+        ),
     )
     attivo = models.BooleanField(default=True)
     ordine = models.PositiveIntegerField(
@@ -69,7 +85,19 @@ class Banner(models.Model):
         verbose_name_plural = 'Banner'
 
     def __str__(self):
-        return f'[{self.get_posizione_display()}] {self.titolo}'
+        return f'[{self.get_posizione_display()}] {self.titolo or "(senza titolo)"}'
+
+    def clean(self):
+        super().clean()
+        if not (self.titolo or self.descrizione or self.immagine):
+            raise ValidationError(
+                'Il banner è vuoto: inserisci un titolo, una descrizione o un\'immagine '
+                '(oppure disattivalo).'
+            )
+        if self.button_testo and not (self.button_link or self.link):
+            raise ValidationError({
+                'button_link': 'Inserisci il link del bottone oppure il link del banner.',
+            })
 
 
 class HeroSettings(models.Model):

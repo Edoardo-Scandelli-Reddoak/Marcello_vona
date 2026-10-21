@@ -14,7 +14,7 @@ class BannerAdmin(ModelAdmin):
     """
     list_display = ('posizione_display', 'titolo', 'attivo', 'updated_at')
     list_filter = ('attivo',)
-    search_fields = ('titolo', 'descrizione')
+    search_fields = ('titolo', 'descrizione', 'link')
     list_editable = ('attivo',)
     readonly_fields = ('posizione', 'created_at', 'updated_at', 'immagine_preview')
     fieldsets = (
@@ -24,6 +24,10 @@ class BannerAdmin(ModelAdmin):
         }),
         ('Contenuto', {
             'fields': ('titolo', 'descrizione', 'immagine', 'immagine_preview'),
+            'description': 'Tutti i campi sono facoltativi, ma serve almeno un titolo, una descrizione o un\'immagine.',
+        }),
+        ('Link (opzionale)', {
+            'fields': ('link',),
         }),
         ('Bottone (opzionale)', {
             'fields': ('button_testo', 'button_link'),

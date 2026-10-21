@@ -305,7 +305,10 @@ export interface Banner {
   titolo: string;
   descrizione: string;
   immagine: string | null;
+  /** Se valorizzato, tutto il banner è cliccabile e porta qui. */
+  link: string;
   button_testo: string;
+  /** Vuoto = il bottone usa `link`. */
   button_link: string;
 }
 
