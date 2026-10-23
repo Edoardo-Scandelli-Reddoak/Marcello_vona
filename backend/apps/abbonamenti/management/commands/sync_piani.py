@@ -5,8 +5,9 @@ from django.utils import timezone
 from apps.abbonamenti.models import PianoAbbonamento, Promozione
 
 
-# Listino ufficiale (tipo, durata_giorni) → (nome, prezzo_centesimi, sconto_%, ordine).
-# Upsert idempotente: ri-eseguibile a ogni deploy senza creare duplicati.
+# Listino di partenza (tipo, durata_giorni) → (nome, prezzo_centesimi, sconto_%, ordine).
+# Serve solo a popolare un database nuovo: in produzione i prezzi si gestiscono
+# dall'admin e questo comando, che gira a ogni deploy, non deve toccarli.
 PIANI = [
     # Standard
     ('standard', 1,   ('1 giorno',    1990,  50, 0)),
@@ -25,52 +26,31 @@ PIANI = [
 
 
 class Command(BaseCommand):
-    help = 'Aggiorna o crea i piani di abbonamento secondo il listino ufficiale, e crea una Promozione di default se mancante.'
+    help = (
+        'Crea i piani di abbonamento del listino di partenza che mancano del tutto, '
+        'e una Promozione di default se mancante. Non modifica né cancella i piani esistenti.'
+    )
 
     def handle(self, *args, **options):
+        # Solo creazione. Prima faceva update_or_create su (tipo, durata):
+        # riscriveva i prezzi messi dall'admin, e andava in errore quando
+        # l'admin aveva creato un piano nuovo con la stessa durata di uno
+        # vecchio disattivato. Per lo stesso motivo non cancella piu' i piani
+        # fuori listino: possono essere piani creati dall'admin.
         created_count = 0
-        updated_count = 0
         for tipo, durata, (nome, prezzo, sconto, ordine) in PIANI:
-            piano, created = PianoAbbonamento.objects.update_or_create(
+            if PianoAbbonamento.objects.filter(tipo=tipo, durata_giorni=durata).exists():
+                continue
+            piano = PianoAbbonamento.objects.create(
                 tipo=tipo,
                 durata_giorni=durata,
-                defaults={
-                    'nome': nome,
-                    'prezzo_centesimi': prezzo,
-                    'sconto_percentuale': sconto,
-                    'ordine': ordine,
-                    'attivo': True,
-                },
+                nome=nome,
+                prezzo_centesimi=prezzo,
+                sconto_percentuale=sconto,
+                ordine=ordine,
             )
-            if created:
-                created_count += 1
-                self.stdout.write(self.style.SUCCESS(f'Creato: {piano}'))
-            else:
-                updated_count += 1
-                self.stdout.write(f'Aggiornato: {piano}')
-
-        # Pulizia "piani fantasma": ciò che non è nel listino ufficiale viene
-        # rimosso. Se però ha abbonamenti collegati (FK PROTECT) non possiamo
-        # cancellarlo senza rompere lo storico → in quel caso lo disattiviamo
-        # soltanto, così sparisce dalla pagina prezzi ma il record resta.
-        listino_keys = {(tipo, durata) for tipo, durata, _ in PIANI}
-        deleted_count = 0
-        deactivated_count = 0
-        for piano in PianoAbbonamento.objects.all():
-            if (piano.tipo, piano.durata_giorni) in listino_keys:
-                continue
-            if piano.abbonamenti.exists():
-                if piano.attivo:
-                    piano.attivo = False
-                    piano.save(update_fields=['attivo'])
-                    deactivated_count += 1
-                    self.stdout.write(self.style.WARNING(
-                        f'Disattivato (ha abbonamenti storici, non cancellabile): {piano}'
-                    ))
-            else:
-                self.stdout.write(self.style.WARNING(f'Eliminato (fuori listino): {piano}'))
-                piano.delete()
-                deleted_count += 1
+            created_count += 1
+            self.stdout.write(self.style.SUCCESS(f'Creato: {piano}'))
 
         # Promozione di default: disattivata, scadenza 30 giorni da ora. L'admin la
         # attiva e regola la scadenza dal pannello quando vuole lanciare la promo.
@@ -83,6 +63,5 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Promozione "Early Bird" creata (disattivata, scadenza +30g).'))
 
         self.stdout.write(self.style.SUCCESS(
-            f'Sync piani completato. Creati: {created_count}, aggiornati: {updated_count}, '
-            f'eliminati: {deleted_count}, disattivati: {deactivated_count}.'
+            f'Sync piani completato. Creati: {created_count}; i piani esistenti non sono stati toccati.'
         ))
