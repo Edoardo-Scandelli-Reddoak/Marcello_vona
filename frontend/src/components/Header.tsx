@@ -14,6 +14,7 @@ export default function Header() {
 
   const navLinks = [
     { href: '/escort', label: 'Le nostre escort' },
+    { href: '/chi-siamo', label: 'Chi siamo' },
   ];
 
   return (

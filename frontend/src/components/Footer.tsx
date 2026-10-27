@@ -30,6 +30,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/escort" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Escort</Link></li>
               <li><Link href="/registrazione" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Iscriviti</Link></li>
+              <li><Link href="/chi-siamo" className="transition-colors duration-200 ease-out hover:text-[#E91E8C]">Chi siamo</Link></li>
             </ul>
           </div>
 

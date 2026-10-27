@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const pagine: MetadataRoute.Sitemap = [
     { url: `${base}/`,             lastModified: now, changeFrequency: 'daily',  priority: 1.0 },
     { url: `${base}/escort`,       lastModified: now, changeFrequency: 'daily',  priority: 0.9 },
+    { url: `${base}/chi-siamo`,    lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/registrati`,   lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${base}/registrazione`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${base}/login`,        lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
