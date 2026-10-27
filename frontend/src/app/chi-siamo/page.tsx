@@ -235,7 +235,7 @@ export default async function ChiSiamoPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/escort"
+                href="/"
                 className="inline-flex items-center gap-2 rounded-full bg-[#E91E8C] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_30px_-6px_rgba(233,30,140,0.6)] transition-colors duration-200 ease-out hover:bg-[#D11A7D]"
               >
                 Sfoglia gli annunci <ArrowRight className="h-4 w-4" aria-hidden="true" />
