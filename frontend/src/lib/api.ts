@@ -299,17 +299,24 @@ export const preferitiApi = {
 };
 
 // Banner pubblicitari
-export interface Banner {
+export interface BannerSlide {
   id: number;
-  posizione: string;
   titolo: string;
   descrizione: string;
   immagine: string | null;
-  /** Se valorizzato, tutto il banner è cliccabile e porta qui. */
+  /** Se valorizzato, tutta la slide è cliccabile e porta qui. */
   link: string;
   button_testo: string;
   /** Vuoto = il bottone usa `link`. */
   button_link: string;
+}
+
+/** Il contenuto del banner è la prima slide; `slides` sono quelle in più. */
+export interface Banner extends BannerSlide {
+  posizione: string;
+  /** Ogni quanti secondi passa alla slide successiva. */
+  intervallo_secondi?: number;
+  slides?: BannerSlide[];
 }
 
 export const bannersApi = {

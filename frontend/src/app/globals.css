@@ -34,3 +34,10 @@
     @apply bg-[#F8F7F5] text-[#1A1A1A];
   }
 }
+
+/* Barra di avanzamento dello slideshow dei banner (PromoBanner): quando
+   finisce, il componente passa alla slide successiva. */
+@keyframes banner-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}

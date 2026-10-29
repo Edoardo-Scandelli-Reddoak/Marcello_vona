@@ -118,7 +118,10 @@ class BannerAdminTest(TestCase):
     def _post(self, **dati):
         data = {
             'titolo': '', 'descrizione': '', 'link': '',
-            'button_testo': '', 'button_link': '', 'attivo': 'on',
+            'button_testo': '', 'button_link': '', 'attivo': 'on', 'intervallo_secondi': '6',
+            # Le slide aggiuntive (vedi test_slide): qui nessuna.
+            'slides-TOTAL_FORMS': '0', 'slides-INITIAL_FORMS': '0',
+            'slides-MIN_NUM_FORMS': '0', 'slides-MAX_NUM_FORMS': '2',
         }
         data.update(dati)
         return self.client.post(self.url, data)

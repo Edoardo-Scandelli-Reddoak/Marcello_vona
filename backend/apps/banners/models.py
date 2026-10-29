@@ -1,7 +1,7 @@
 import re
 
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator, URLValidator
+from django.core.validators import EmailValidator, MaxValueValidator, MinValueValidator, URLValidator
 from django.db import models
 
 
@@ -28,20 +28,9 @@ def validate_button_link(value: str) -> None:
     _url_validator(value)
 
 
-class Banner(models.Model):
-    POSIZIONE_CHOICES = (
-        ('homepage_middle', 'Homepage — tra "Le più apprezzate" e "Vicino a te"'),
-        ('homepage_after_cta', 'Homepage — sotto al banner "Sei un\'escort?"'),
-        ('homepage_before_reviews', 'Homepage — sopra alla sezione "Cosa dicono di noi"'),
-    )
+class ContenutoBanner(models.Model):
+    """Testi, immagine, link e bottone: comuni al banner e alle sue slide."""
 
-    posizione = models.CharField(
-        max_length=50,
-        choices=POSIZIONE_CHOICES,
-        unique=True,
-        verbose_name='Posizione',
-        help_text='Dove viene mostrato il banner.',
-    )
     titolo = models.CharField(
         max_length=200, blank=True,
         help_text='Lascia vuoto se l\'immagine contiene già il testo.',
@@ -71,6 +60,48 @@ class Banner(models.Model):
             'Lascia vuoto per usare il link del banner.'
         ),
     )
+
+    class Meta:
+        abstract = True
+
+    def clean(self):
+        super().clean()
+        if not (self.titolo or self.descrizione or self.immagine):
+            raise ValidationError(
+                'Il banner è vuoto: inserisci un titolo, una descrizione o un\'immagine '
+                '(oppure disattivalo).'
+            )
+        if self.button_testo and not (self.button_link or self.link):
+            raise ValidationError({
+                'button_link': 'Inserisci il link del bottone oppure il link del banner.',
+            })
+
+
+class Banner(ContenutoBanner):
+    """Uno slot pubblicitario della home. Il suo contenuto e' la prima slide;
+    con le `slides` aggiuntive il frontend le fa scorrere da sole."""
+
+    POSIZIONE_CHOICES = (
+        ('homepage_middle', 'Homepage — tra "Le più apprezzate" e "Vicino a te"'),
+        ('homepage_after_cta', 'Homepage — sotto al banner "Sei un\'escort?"'),
+        ('homepage_before_reviews', 'Homepage — sopra alla sezione "Cosa dicono di noi"'),
+    )
+    # Slide aggiuntive oltre al contenuto del banner: 3 in tutto.
+    MAX_SLIDE_AGGIUNTIVE = 2
+
+    posizione = models.CharField(
+        max_length=50,
+        choices=POSIZIONE_CHOICES,
+        unique=True,
+        verbose_name='Posizione',
+        help_text='Dove viene mostrato il banner.',
+    )
+    intervallo_secondi = models.PositiveSmallIntegerField(
+        default=6,
+        validators=[MinValueValidator(2), MaxValueValidator(60)],
+        verbose_name='Secondi per slide',
+        help_text='Ogni quanti secondi passa alla slide successiva. Conta solo se ci sono altre slide.',
+    )
     attivo = models.BooleanField(default=True)
     ordine = models.PositiveIntegerField(
         default=0,
@@ -87,17 +118,21 @@ class Banner(models.Model):
     def __str__(self):
         return f'[{self.get_posizione_display()}] {self.titolo or "(senza titolo)"}'
 
-    def clean(self):
-        super().clean()
-        if not (self.titolo or self.descrizione or self.immagine):
-            raise ValidationError(
-                'Il banner è vuoto: inserisci un titolo, una descrizione o un\'immagine '
-                '(oppure disattivalo).'
-            )
-        if self.button_testo and not (self.button_link or self.link):
-            raise ValidationError({
-                'button_link': 'Inserisci il link del bottone oppure il link del banner.',
-            })
+
+class SlideBanner(ContenutoBanner):
+    """Seconda e terza slide di un banner, ognuna col suo contenuto."""
+
+    banner = models.ForeignKey(Banner, on_delete=models.CASCADE, related_name='slides')
+    ordine = models.PositiveSmallIntegerField(default=0, help_text='Le slide con ordine più basso vengono prima.')
+    attivo = models.BooleanField(default=True, help_text='Deseleziona per nasconderla senza cancellarla.')
+
+    class Meta:
+        ordering = ['ordine', 'id']
+        verbose_name = 'Slide aggiuntiva'
+        verbose_name_plural = 'Slide aggiuntive'
+
+    def __str__(self):
+        return self.titolo or f'Slide {self.ordine + 1}'
 
 
 class HeroSettings(models.Model):
