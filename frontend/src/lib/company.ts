@@ -42,7 +42,8 @@ interface CompanyInfo {
 
 export const COMPANY: CompanyInfo = {
   ragioneSociale: 'escort-bella',
-  indirizzo: 'Via Gargano 36/38',
+  // Tolto su richiesta il 2026-11-02: non va mostrato sul sito.
+  indirizzo: '',
   cittaCap: '',
   partitaIva: '14119931005',
   codiceFiscale: '',
