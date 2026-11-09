@@ -27,8 +27,16 @@ export const metadata: Metadata = {
     // Favicon brand finale (public/faviconescortfinale.svg) — versione
     // quadrata 221×221, sostituisce la vecchia favicon-escort.svg che era
     // rettangolare (221×124) e veniva schiacciata nel tab del browser.
-    icon: [{ url: '/faviconescortfinale.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/faviconescortfinale.svg', type: 'image/svg+xml' }],
+    // Google Search non usa bene l'SVG (contiene PNG incorporati + maschere):
+    // gli diamo favicon.ico e PNG quadrati multipli di 48px, generati
+    // dall'SVG. L'SVG resta per i browser che lo supportano.
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { url: '/icon-48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/faviconescortfinale.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   openGraph: {
     type: 'website',
