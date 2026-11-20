@@ -15,6 +15,8 @@ export default function robots(): MetadataRoute.Robots {
           '/registrazione/',
           '/login',
           '/abbonamento/',
+          '/password-dimenticata',
+          '/reimposta-password',
         ],
       },
     ],

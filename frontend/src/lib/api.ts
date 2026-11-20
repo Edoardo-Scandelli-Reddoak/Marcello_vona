@@ -51,6 +51,12 @@ export const authApi = {
   logout: () => fetchApi('/auth/logout/', { method: 'POST' }),
   me: () => fetchApi('/auth/me/'),
   refresh: () => fetchApi('/auth/refresh/', { method: 'POST' }),
+  changePassword: (data: { old_password: string; new_password: string; new_password_confirm: string }) =>
+    fetchApi('/auth/password/change/', { method: 'POST', body: JSON.stringify(data) }) as Promise<{ message: string }>,
+  requestPasswordReset: (email: string) =>
+    fetchApi('/auth/password/reset/', { method: 'POST', body: JSON.stringify({ email }) }) as Promise<{ message: string }>,
+  confirmPasswordReset: (data: { uid: string; token: string; new_password: string; new_password_confirm: string }) =>
+    fetchApi('/auth/password/reset/confirm/', { method: 'POST', body: JSON.stringify(data) }) as Promise<{ message: string }>,
 };
 
 export interface PosizioneTemporanea {

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Heart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EscortCard from '@/components/EscortCard';
+import CambiaPassword from '@/components/CambiaPassword';
 import { preferitiApi } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -75,6 +76,10 @@ export default function DashboardUtentePage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-12">
+        <CambiaPassword />
       </section>
     </div>
   );

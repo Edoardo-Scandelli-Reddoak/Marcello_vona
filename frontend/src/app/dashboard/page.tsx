@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import StarRating from '@/components/StarRating';
+import CambiaPassword from '@/components/CambiaPassword';
 import { escortApi, recensioniApi, abbonamentiApi, notificheApi, tagsApi, mediaUrl, MAX_VIDEO_PER_ESCORT, MAX_FOTO_GALLERIA, type Abbonamento, type Notifica, type EscortVideo, type EscortFoto } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Phone, Camera, Edit2, Save, Sparkles, AlertCircle, Calendar, MapPin, Loader2, Bell, X, Video, Image as ImageIcon, Trash2, Plus, Pause, Play, AlertTriangle } from 'lucide-react';
@@ -185,6 +186,7 @@ export default function DashboardPage() {
             <Button variant="outline" onClick={() => router.push('/')}>Torna alla home</Button>
           </div>
         </div>
+        <CambiaPassword className="mt-6 text-left" />
       </div>
     );
   }
@@ -963,6 +965,9 @@ export default function DashboardPage() {
           <p className="text-xs text-[#1A1A1A]/60">{profilo.numero_recensioni || 0} recensioni</p>
         </div>
       </div>
+
+      {/* Account: cambio password */}
+      <CambiaPassword className="mb-8" />
 
       {/* Gestione scheda: pausa / cancellazione */}
       <div className="mb-8 rounded-2xl border border-[#1A1A1A]/10 bg-white p-5 sm:p-6">
