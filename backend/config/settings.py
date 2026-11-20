@@ -246,6 +246,9 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
+    # Salva User.last_login a ogni login: serve all'Analisi dati per contare
+    # gli utenti attivi nel periodo.
+    'UPDATE_LAST_LOGIN': True,
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_HTTP_ONLY': True,
     'AUTH_COOKIE_SECURE': not DEBUG,

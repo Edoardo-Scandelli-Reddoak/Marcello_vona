@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n analytics_extras %}
 
 {% block title %}Analisi dati | {{ site_title }}{% endblock %}
 
@@ -11,232 +11,421 @@
   {{ block.super }}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    .dash-wrap { padding: 1.25rem 1.5rem 3rem; max-width: 1400px; }
-    .dash-h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.25rem; color: #1A1A1A; }
-    .dash-sub { color: #666; margin: 0 0 1.5rem; font-size: 0.92rem; }
-    .dash-section-title { font-size: 1rem; font-weight: 700; color: #1A1A1A; margin: 1.8rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.85rem; }
-    .dash-card {
-      background: white;
-      border: 1px solid #e4e4e7;
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-    }
-    .dash-card-label { font-size: 0.75rem; color: #777; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
-    .dash-card-value { font-size: 1.8rem; font-weight: 800; color: #1A1A1A; line-height: 1.1; }
-    .dash-card-extra { font-size: 0.8rem; color: #888; margin-top: 0.35rem; }
-    .dash-card-accent .dash-card-value { color: #E91E8C; }
-    .dash-chart-box {
-      background: white;
-      border: 1px solid #e4e4e7;
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-      margin-top: 0.75rem;
-    }
-    .dash-chart-title { font-size: 0.85rem; font-weight: 600; color: #555; margin: 0 0 0.5rem; }
-    .dash-table { width: 100%; border-collapse: collapse; }
-    .dash-table th, .dash-table td { padding: 0.6rem 0.5rem; text-align: left; font-size: 0.88rem; border-bottom: 1px solid #f0f0f0; }
-    .dash-table th { color: #555; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .dash-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .dash-note { font-size: 0.78rem; color: #999; margin-top: 0.4rem; }
+    .an { --bg:#fff; --bg2:#fafafa; --bd:#e4e4e7; --tx:#1A1A1A; --mut:#71717a; --acc:#E91E8C; --acc2:#7c3aed;
+          --ok:#16a34a; --ko:#dc2626; --bar:#fce7f3;
+          padding: 1.25rem 1.5rem 4rem; max-width: 1500px; color: var(--tx); }
+    html.dark .an { --bg:#18181b; --bg2:#1f1f23; --bd:#3f3f46; --tx:#f4f4f5; --mut:#a1a1aa; --bar:#4a1d35; }
+    .an * { box-sizing: border-box; }
+    .an h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 .2rem; }
+    .an .sub { color: var(--mut); margin: 0 0 1rem; font-size: .9rem; }
+    .an h2 { font-size: 1.05rem; font-weight: 800; margin: 2.2rem 0 .3rem; text-transform: uppercase; letter-spacing: .04em; scroll-margin-top: 140px; }
+    .an h2 + .note { margin-bottom: .8rem; }
+    .an h3 { font-size: .85rem; font-weight: 700; color: var(--mut); margin: 0 0 .6rem; }
+    .an .note { font-size: .78rem; color: var(--mut); margin: .2rem 0 0; }
+
+    /* Filtri */
+    .an .filtri { background: var(--bg2); border: 1px solid var(--bd);
+                  border-radius: 14px; padding: .8rem 1rem; display: flex; flex-wrap: wrap; gap: .6rem .8rem; align-items: flex-end; }
+    @media (min-width: 1200px) { .an .filtri { position: sticky; top: 0; z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,.06); } }
+    .an .filtri label { display: flex; flex-direction: column; gap: .2rem; font-size: .72rem; font-weight: 600; color: var(--mut); text-transform: uppercase; letter-spacing: .03em; }
+    .an .filtri select, .an .filtri input { min-width: 130px; padding: .4rem .5rem; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); color: var(--tx); font-size: .88rem; }
+    .an .filtri .date { display: none; gap: .6rem; }
+    .an .filtri .date.on { display: flex; }
+    .an .btn { display: inline-block; padding: .48rem .9rem; border-radius: 8px; font-size: .85rem; font-weight: 600; border: 1px solid var(--bd); background: var(--bg); color: var(--tx); cursor: pointer; text-decoration: none; }
+    .an .btn-acc { background: var(--acc); border-color: var(--acc); color: #fff; }
+    .an .riepilogo { margin: .7rem 0 0; font-size: .85rem; color: var(--mut); }
+    .an .riepilogo b { color: var(--tx); }
+    .an .chip { display: inline-block; background: var(--bar); color: var(--acc); border-radius: 999px; padding: .1rem .55rem; font-size: .75rem; font-weight: 600; margin-left: .3rem; }
+    .an .errore { background: #fef2f2; color: #b91c1c; border-radius: 8px; padding: .5rem .8rem; margin-top: .6rem; font-size: .85rem; }
+    .an .indice { display: flex; flex-wrap: wrap; gap: .4rem; margin: .8rem 0 0; }
+    .an .indice a { font-size: .8rem; color: var(--mut); text-decoration: none; padding: .2rem .6rem; border: 1px solid var(--bd); border-radius: 999px; }
+    .an .indice a:hover { color: var(--acc); border-color: var(--acc); }
+
+    /* Card */
+    .an .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .8rem; }
+    .an .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: .8rem; margin-top: .8rem; }
+    .an .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: .8rem; margin-top: .8rem; }
+    @media (max-width: 700px) { .an .grid-2, .an .grid-3 { grid-template-columns: 1fr; } .an { padding: 1rem .8rem 3rem; } }
+    .an .card { background: var(--bg); border: 1px solid var(--bd); border-radius: 14px; padding: .9rem 1rem; min-width: 0; }
+    .an .k-label { font-size: .72rem; color: var(--mut); text-transform: uppercase; letter-spacing: .04em; }
+    .an .k-val { font-size: 1.65rem; font-weight: 800; line-height: 1.15; margin-top: .2rem; font-variant-numeric: tabular-nums; }
+    .an .k-extra { font-size: .78rem; color: var(--mut); margin-top: .25rem; }
+    .an .su { color: var(--ok); font-weight: 700; }
+    .an .giu { color: var(--ko); font-weight: 700; }
+    .an .acc .k-val { color: var(--acc); }
+
+    /* Tabelle e barre */
+    .an table { width: 100%; border-collapse: collapse; }
+    .an th, .an td { padding: .45rem .4rem; text-align: left; font-size: .85rem; border-bottom: 1px solid var(--bd); vertical-align: middle; }
+    .an th { font-size: .7rem; color: var(--mut); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+    .an td.n, .an th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .an .barra { position: relative; }
+    .an .barra span.b { position: absolute; inset: 15% auto 15% 0; background: var(--bar); border-radius: 4px; z-index: 0; }
+    .an .barra span.t { position: relative; z-index: 1; }
+    .an .scroll { overflow-x: auto; }
+    .an .vuoto { color: var(--mut); font-size: .85rem; padding: .6rem 0; }
+    .an .tag { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: var(--bg2); border: 1px solid var(--bd); white-space: nowrap; }
+    .an canvas { max-width: 100%; }
+    .an .funnel-row { display: grid; grid-template-columns: minmax(180px, 1.3fr) 3fr auto; gap: .8rem; align-items: center; padding: .35rem 0; font-size: .88rem; }
+    .an .funnel-bar { height: 22px; background: var(--acc); border-radius: 6px; min-width: 2px; }
+    @media (max-width: 700px) { .an .funnel-row { grid-template-columns: 1fr; gap: .2rem; } }
   </style>
 {% endblock %}
 
 {% block breadcrumbs %}
-  <div class="breadcrumbs">
-    <a href="{% url 'admin:index' %}">Home</a>
-    &rsaquo; Analisi dati
-  </div>
+  <div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; Analisi dati</div>
 {% endblock %}
 
 {% block content %}
-<div class="dash-wrap">
-  <h1 class="dash-h1">Analisi dati</h1>
-  <p class="dash-sub">Panoramica del sito, visite e fatturato. I dati sulle visite anonime iniziano dal momento dell'attivazione del tracciamento.</p>
+{% with s=stats p=stats.periodo %}
+<div class="an">
+  <h1>Analisi dati</h1>
+  <p class="sub">Tutti i numeri del sito: traffico, utenti, schede, incassi e interazioni. Scegli il periodo e restringi per zona o categoria con i filtri.</p>
 
-  {# ============================= VISITE ============================= #}
-  <h2 class="dash-section-title">Visite anonime</h2>
-  <div class="dash-grid">
-    <div class="dash-card dash-card-accent">
-      <div class="dash-card-label">Visite ultimi 30gg</div>
-      <div class="dash-card-value">{{ stats.visite.ultimi_30 }}</div>
-      <div class="dash-card-extra">{{ stats.visite.unique_30 }} visitatori unici</div>
+  {# =========================== FILTRI =========================== #}
+  <form method="get" class="filtri" id="filtri">
+    <label>Periodo
+      <select name="periodo" id="f-periodo">
+        {% for val, lbl in opzioni.periodi %}<option value="{{ val }}" {% if filtri.preset == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="date {% if filtri.preset == 'custom' %}on{% endif %}" id="f-date">
+      <label>Dal <input type="date" name="da" value="{{ p.inizio|date:'Y-m-d' }}"></label>
+      <label>Al <input type="date" name="a" value="{{ p.fine|date:'Y-m-d' }}"></label>
     </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Visite ultimi 7gg</div>
-      <div class="dash-card-value">{{ stats.visite.ultimi_7 }}</div>
-      <div class="dash-card-extra">{{ stats.visite.unique_7 }} visitatori unici</div>
+    <label>Provincia
+      <select name="provincia">
+        <option value="">Tutte</option>
+        {% for v in opzioni.province %}<option value="{{ v }}" {% if filtri.provincia == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Città
+      <select name="citta">
+        <option value="">Tutte</option>
+        {% for v in opzioni.citta %}<option value="{{ v }}" {% if filtri.citta|lower == v|lower %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Categoria
+      <select name="categoria">
+        <option value="">Tutte</option>
+        {% for c in opzioni.categorie %}<option value="{{ c.nome }}" {% if filtri.categoria == c.nome %}selected{% endif %}>{{ c.label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Tipo abbonamento
+      <select name="tipo_piano">
+        <option value="">Tutti</option>
+        {% for val, lbl in opzioni.tipi_piano %}<option value="{{ val }}" {% if filtri.tipo_piano == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+      </select>
+    </label>
+    <input type="hidden" name="ordina" value="{{ filtri.ordina }}">
+    <button type="submit" class="btn btn-acc">Applica</button>
+    <a href="{{ request.path }}" class="btn">Azzera</a>
+  </form>
+  {% for e in filtri.errori %}<div class="errore">{{ e }}</div>{% endfor %}
+  <p class="riepilogo">
+    Periodo: <b>{{ p.inizio|date:"j M Y" }} – {{ p.fine|date:"j M Y" }}</b> ({{ p.giorni }} giorn{{ p.giorni|pluralize:"o,i" }}),
+    confrontato con {{ p.prec_inizio|date:"j M Y" }} – {{ p.prec_fine|date:"j M Y" }}.
+    Grafici per {{ p.granularita }}.
+    {% if filtri.provincia %}<span class="chip">Prov. {{ filtri.provincia }}</span>{% endif %}
+    {% if filtri.citta %}<span class="chip">{{ filtri.citta }}</span>{% endif %}
+    {% if filtri.categoria %}<span class="chip">{{ filtri.categoria }}</span>{% endif %}
+    {% if filtri.tipo_piano %}<span class="chip">Piano {{ filtri.tipo_piano }}</span>{% endif %}
+  </p>
+  {% if filtri.filtra_escort %}<p class="note">I filtri di zona e categoria valgono per schede, abbonamenti, recensioni, preferiti e visite alle schede. Il traffico generale del sito resta complessivo.</p>{% endif %}
+  <nav class="indice">
+    <a href="#sintesi">Sintesi</a><a href="#traffico">Traffico</a><a href="#provenienza">Provenienza e dispositivi</a>
+    <a href="#utenti">Utenti</a><a href="#schede">Schede escort</a><a href="#incassi">Abbonamenti e incassi</a>
+    <a href="#engagement">Recensioni e preferiti</a><a href="#funnel">Percorso escort</a><a href="#classifica">Classifica escort</a>
+  </nav>
+
+  {# =========================== SINTESI =========================== #}
+  <h2 id="sintesi">Sintesi del periodo</h2>
+  <p class="note">La percentuale confronta con il periodo precedente della stessa durata.</p>
+  <div class="grid">
+    {% for k in s.kpi %}
+      <div class="card{% if forloop.first or k.formato == 'euro' %} acc{% endif %}">
+        <div class="k-label">{{ k.label }}</div>
+        <div class="k-val">{{ k|kpi_valore }}</div>
+        <div class="k-extra">
+          {% if k.delta is not None %}<span class="{% if k.delta >= 0 %}su{% else %}giu{% endif %}">{% if k.delta >= 0 %}▲ +{% else %}▼ {% endif %}{{ k.delta|num:1 }}%</span>{% else %}<span>—</span>{% endif %}
+          · prima {{ k|kpi_precedente }}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# =========================== TRAFFICO =========================== #}
+  <h2 id="traffico">Traffico</h2>
+  <p class="note">Visite anonime: niente cookie, l'IP non viene salvato. I bot noti sono esclusi.</p>
+  <div class="grid">
+    <div class="card"><div class="k-label">Visite</div><div class="k-val">{{ s.traffico.visite|num }}</div></div>
+    <div class="card"><div class="k-label">Visitatori unici</div><div class="k-val">{{ s.traffico.unici|num }}</div></div>
+    <div class="card"><div class="k-label">Pagine per visitatore</div><div class="k-val">{{ s.traffico.pagine_per_visitatore|num:2 }}</div></div>
+    <div class="card"><div class="k-label">Visitatori di ritorno</div><div class="k-val">{{ s.traffico.di_ritorno|num }}</div><div class="k-extra">{{ s.traffico.di_ritorno_pct|pct }} dei visitatori unici erano già passati prima del periodo</div></div>
+  </div>
+  <div class="card" style="margin-top:.8rem"><h3>Visite e visitatori unici</h3><canvas id="g-visite" height="90"></canvas></div>
+  <div class="grid-2">
+    <div class="card"><h3>Visite per ora del giorno</h3><canvas id="g-ore" height="150"></canvas></div>
+    <div class="card"><h3>Visite per giorno della settimana</h3><canvas id="g-settimana" height="150"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Sezioni del sito</h3>
+      {% massimo s.traffico.sezioni as mx %}
+      {% if s.traffico.sezioni %}<table><thead><tr><th>Sezione</th><th class="n">Visite</th><th class="n">%</th></tr></thead><tbody>
+        {% for r in s.traffico.sezioni %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.pct|pct }}</td></tr>{% endfor %}
+      </tbody></table>{% else %}<p class="vuoto">Nessuna visita nel periodo.</p>{% endif %}
     </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Visite totali</div>
-      <div class="dash-card-value">{{ stats.visite.totali }}</div>
-      <div class="dash-card-extra">da inizio tracciamento</div>
+    <div class="card">
+      <h3>Pagine più visitate</h3>
+      {% massimo s.traffico.top_pagine as mx %}
+      {% if s.traffico.top_pagine %}<div class="scroll"><table><thead><tr><th>Pagina</th><th class="n">Visite</th><th class="n">Unici</th></tr></thead><tbody>
+        {% for r in s.traffico.top_pagine %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t"><code>{{ r.label|truncatechars:60 }}</code></span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.unici|num }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="vuoto">Nessuna visita nel periodo.</p>{% endif %}
     </div>
   </div>
 
-  <div class="dash-chart-box">
-    <h3 class="dash-chart-title">Visite per giorno (ultimi 30 giorni)</h3>
-    <canvas id="chart-visite" height="80"></canvas>
+  <h2 id="provenienza">Provenienza e dispositivi</h2>
+  <div class="grid-3">
+    <div class="card">
+      <h3>Da dove arrivano</h3>
+      {% massimo s.traffico.canali as mx %}
+      {% if s.traffico.canali %}<table><tbody>
+        {% for r in s.traffico.canali %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.pct|pct }}</td></tr>{% endfor %}
+      </tbody></table>
+      <p class="note">"Interno" = navigazione da una pagina all'altra del sito. "Diretto" = indirizzo digitato, preferiti o app che non passano la provenienza.</p>
+      {% else %}<p class="vuoto">Nessun dato.</p>{% endif %}
+    </div>
+    <div class="card">
+      <h3>Siti di provenienza</h3>
+      {% massimo s.traffico.domini as mx %}
+      {% if s.traffico.domini %}<table><tbody>
+        {% for r in s.traffico.domini %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td></tr>{% endfor %}
+      </tbody></table>{% else %}<p class="vuoto">Nessun sito esterno nel periodo.</p>{% endif %}
+    </div>
+    <div class="card"><h3>Dispositivo</h3><div style="position:relative;height:230px"><canvas id="g-dispositivi"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Browser</h3>
+      {% massimo s.traffico.browser as mx %}
+      <table><tbody>{% for r in s.traffico.browser %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.pct|pct }}</td></tr>{% empty %}<tr><td class="vuoto">Nessun dato.</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div class="card">
+      <h3>Sistema operativo</h3>
+      {% massimo s.traffico.sistemi as mx %}
+      <table><tbody>{% for r in s.traffico.sistemi %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.pct|pct }}</td></tr>{% empty %}<tr><td class="vuoto">Nessun dato.</td></tr>{% endfor %}</tbody></table>
+    </div>
   </div>
 
-  {% if stats.visite.top_pages %}
-  <div class="dash-chart-box">
-    <h3 class="dash-chart-title">Pagine più visitate (ultimi 30 giorni)</h3>
-    <table class="dash-table">
-      <thead><tr><th>Path</th><th style="text-align:right;">Visite</th></tr></thead>
+  {# =========================== UTENTI =========================== #}
+  <h2 id="utenti">Utenti</h2>
+  <p class="note">Totali ad oggi (esclusi gli amministratori). Gli accessi si contano dal 20/11/2026, quando è stata attivata la registrazione dell'ultimo accesso.</p>
+  <div class="grid">
+    <div class="card"><div class="k-label">Account totali</div><div class="k-val">{{ s.utenti.totali|num }}</div><div class="k-extra">{{ s.utenti.clienti|num }} clienti · {{ s.utenti.escort|num }} escort</div></div>
+    <div class="card"><div class="k-label">Clienti che hanno fatto accesso</div><div class="k-val">{{ s.utenti.attivi_clienti|num }}</div><div class="k-extra">nel periodo</div></div>
+    <div class="card"><div class="k-label">Escort che hanno fatto accesso</div><div class="k-val">{{ s.utenti.attivi_escort|num }}</div><div class="k-extra">nel periodo</div></div>
+    <div class="card"><div class="k-label">Mai entrati dopo la registrazione</div><div class="k-val">{{ s.utenti.mai_entrati|num }}</div></div>
+  </div>
+  <div class="card" style="margin-top:.8rem"><h3>Nuove registrazioni</h3><canvas id="g-registrazioni" height="80"></canvas></div>
+
+  {# =========================== SCHEDE =========================== #}
+  <h2 id="schede">Schede escort</h2>
+  <p class="note">Situazione attuale delle schede{% if filtri.filtra_escort %} che rispettano i filtri{% endif %}.</p>
+  <div class="grid">
+    <div class="card"><div class="k-label">Schede totali</div><div class="k-val">{{ s.schede.totali|num }}</div></div>
+    <div class="card acc"><div class="k-label">Visibili sul sito ora</div><div class="k-val">{{ s.schede.visibili|num }}</div><div class="k-extra">di cui {{ s.schede.in_evidenza|num }} in evidenza</div></div>
+    <div class="card"><div class="k-label">Approvate</div><div class="k-val">{{ s.schede.approvate|num }}</div></div>
+    <div class="card"><div class="k-label">In attesa di verifica</div><div class="k-val">{{ s.schede.in_attesa|num }}</div>{% if s.schede.in_attesa %}<div class="k-extra"><a href="{% url 'admin:professioniste_professionista_changelist' %}?stato_approvazione__exact=in_attesa">vedi elenco →</a></div>{% endif %}</div>
+    <div class="card"><div class="k-label">Rifiutate</div><div class="k-val">{{ s.schede.rifiutate|num }}</div></div>
+    <div class="card"><div class="k-label">In pausa</div><div class="k-val">{{ s.schede.in_pausa|num }}</div></div>
+    <div class="card"><div class="k-label">Approvate senza abbonamento</div><div class="k-val">{{ s.schede.approvate_senza_abbonamento|num }}</div><div class="k-extra">da ricontattare per l'attivazione</div></div>
+    <div class="card"><div class="k-label">Click sul telefono</div><div class="k-val">{{ s.schede.click_telefono|num }}</div><div class="k-extra">totale da sempre (non per periodo)</div></div>
+    <div class="card"><div class="k-label">Tempo medio di verifica</div><div class="k-val">{% if s.schede.ore_medie_verifica is not None %}{{ s.schede.ore_medie_verifica|num:1 }} h{% else %}—{% endif %}</div><div class="k-extra">schede create nel periodo</div></div>
+  </div>
+  <div class="card" style="margin-top:.8rem"><h3>Nuove schede create</h3><canvas id="g-schede" height="70"></canvas></div>
+  <div class="grid-3">
+    <div class="card"><h3>Per categoria</h3>{% massimo s.per_categoria as mx %}
+      <table><tbody>{% for r in s.per_categoria %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td></tr>{% empty %}<tr><td class="vuoto">Nessuna scheda.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card"><h3>Per provincia</h3>{% massimo s.per_provincia as mx %}
+      <table><tbody>{% for r in s.per_provincia %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td></tr>{% empty %}<tr><td class="vuoto">Nessuna scheda.</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card"><h3>Per città</h3>{% massimo s.per_citta as mx %}
+      <table><tbody>{% for r in s.per_citta %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td></tr>{% empty %}<tr><td class="vuoto">Nessuna scheda.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><h3>Completezza delle schede</h3>
+      <table><tbody>{% for r in s.completezza %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:s.schede.totali }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.pct|pct }}</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card"><h3>Età (dalla data di nascita)</h3>{% massimo s.eta as mx %}
+      <table><tbody>{% for r in s.eta %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }} anni</span></td><td class="n">{{ r.count|num }}</td></tr>{% endfor %}</tbody></table></div>
+    <div class="card"><h3>Disponibilità</h3>{% massimo s.per_disponibilita as mx %}
+      <table><tbody>{% for r in s.per_disponibilita %}<tr><td class="barra"><span class="b" style="width:{{ r.count|barra:mx }}%"></span><span class="t">{{ r.label }}</span></td><td class="n">{{ r.count|num }}</td></tr>{% empty %}<tr><td class="vuoto">Nessuna scheda.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card" style="margin-top:.8rem"><h3>Tariffe per categoria</h3>
+    <div class="scroll"><table><thead><tr><th>Categoria</th><th class="n">Schede</th><th class="n">Media 30 min</th><th class="n">Media 1 ora</th><th class="n">Min 1 ora</th><th class="n">Max 1 ora</th></tr></thead><tbody>
+      {% for r in s.tariffe %}<tr><td>{{ r.label }}</td><td class="n">{{ r.schede|num }}</td><td class="n">{{ r.media_30|euro }}</td><td class="n">{{ r.media_60|euro }}</td><td class="n">{{ r.min_60|euro }}</td><td class="n">{{ r.max_60|euro }}</td></tr>{% empty %}<tr><td class="vuoto">Nessuna scheda.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+
+  {# =========================== INCASSI =========================== #}
+  <h2 id="incassi">Abbonamenti e incassi</h2>
+  <p class="note">Gli incassi contano gli abbonamenti pagati per data di pagamento; gli omaggi sono esclusi.</p>
+  <div class="grid">
+    <div class="card acc"><div class="k-label">Abbonamenti attivi ora</div><div class="k-val">{{ s.abbonamenti.attivi_ora|num }}</div><div class="k-extra">{{ s.abbonamenti.attivi_standard|num }} standard · {{ s.abbonamenti.attivi_evidenza|num }} evidenza</div></div>
+    <div class="card"><div class="k-label">Pagamento medio</div><div class="k-val">{{ s.abbonamenti.scontrino_medio|euro }}</div></div>
+    <div class="card"><div class="k-label">Escort che hanno pagato</div><div class="k-val">{{ s.abbonamenti.escort_paganti|num }}</div><div class="k-extra">{{ s.abbonamenti.incasso_per_escort|euro }} a testa in media</div></div>
+    <div class="card"><div class="k-label">Richieste di abbonamento</div><div class="k-val">{{ s.abbonamenti.richieste|num }}</div><div class="k-extra">{{ s.abbonamenti.richieste_pagate|num }} pagate ({{ s.abbonamenti.conversione_richieste|pct }})</div></div>
+    <div class="card"><div class="k-label">Rinnovi</div><div class="k-val">{{ s.abbonamenti.tasso_rinnovo|pct }}</div><div class="k-extra">{{ s.abbonamenti.rinnovati|num }} su {{ s.abbonamenti.scaduti_nel_periodo|num }} escort con abbonamento scaduto nel periodo</div></div>
+    <div class="card"><div class="k-label">Omaggi concessi</div><div class="k-val">{{ s.abbonamenti.omaggi|num }}</div></div>
+    <div class="card"><div class="k-label">Sblocchi social</div><div class="k-val">{{ s.sblocchi.periodo|num }}</div><div class="k-extra">{{ s.sblocchi.euro|euro }}</div></div>
+    <div class="card"><div class="k-label">Incasso totale da sempre</div><div class="k-val">{{ s.abbonamenti.incasso_storico|euro }}</div><div class="k-extra">{{ s.abbonamenti.pagamenti_storici|num }} pagamenti</div></div>
+  </div>
+  <div class="card" style="margin-top:.8rem"><h3>Incassi nel tempo (€)</h3><canvas id="g-incassi" height="80"></canvas></div>
+  <div class="grid-2">
+    <div class="card"><h3>Incassi per piano</h3>
+      <table><thead><tr><th>Piano</th><th class="n">Pagamenti</th><th class="n">Incasso</th></tr></thead><tbody>
+        {% for r in s.abbonamenti.per_piano %}<tr><td>{{ r.label }}</td><td class="n">{{ r.count|num }}</td><td class="n">{{ r.euro|euro }}</td></tr>{% empty %}<tr><td class="vuoto" colspan="3">Nessun pagamento nel periodo.</td></tr>{% endfor %}
+      </tbody></table></div>
+    <div class="card"><h3>In scadenza nei prossimi 7 giorni</h3>
+      <table><thead><tr><th>Escort</th><th>Piano</th><th class="n">Scade il</th></tr></thead><tbody>
+        {% for a in s.abbonamenti.in_scadenza %}<tr><td><a href="{% url 'admin:professioniste_professionista_change' a.prof_id %}">{{ a.nome }}</a></td><td>{{ a.piano }}</td><td class="n">{{ a.scadenza|date:"d/m H:i" }}</td></tr>{% empty %}<tr><td class="vuoto" colspan="3">Nessun abbonamento in scadenza.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+
+  {# =========================== ENGAGEMENT =========================== #}
+  <h2 id="engagement">Recensioni e preferiti</h2>
+  <div class="grid">
+    <div class="card"><div class="k-label">Recensioni nel periodo</div><div class="k-val">{{ s.engagement.recensioni|num }}</div><div class="k-extra">{{ s.engagement.recensioni_totali|num }} in totale</div></div>
+    <div class="card"><div class="k-label">Voto medio</div><div class="k-val">{% if s.engagement.recensioni_media %}{{ s.engagement.recensioni_media|num:2 }} ★{% else %}—{% endif %}</div></div>
+    <div class="card"><div class="k-label">Recensioni con risposta</div><div class="k-val">{{ s.engagement.recensioni_risposte_pct|pct }}</div><div class="k-extra">tempo medio di risposta: {% if s.engagement.ore_medie_risposta is not None %}{{ s.engagement.ore_medie_risposta|num:1 }} h{% else %}—{% endif %}</div></div>
+    <div class="card"><div class="k-label">Preferiti aggiunti</div><div class="k-val">{{ s.engagement.preferiti|num }}</div><div class="k-extra">da {{ s.engagement.clienti_con_preferiti|num }} clienti · {{ s.engagement.preferiti_totali|num }} in totale</div></div>
+    <div class="card"><div class="k-label">Notifiche inviate</div><div class="k-val">{{ s.engagement.notifiche|num }}</div><div class="k-extra">{{ s.engagement.notifiche_lette_pct|pct }} lette</div></div>
+    <div class="card"><div class="k-label">Recensioni del sito pubblicate</div><div class="k-val">{{ s.engagement.recensioni_sito|num }}</div><div class="k-extra">media {{ s.engagement.recensioni_sito_media|num:2 }} ★</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><h3>Recensioni e preferiti nel tempo</h3><canvas id="g-engagement" height="140"></canvas></div>
+    <div class="card"><h3>Distribuzione dei voti (periodo)</h3><canvas id="g-stelle" height="140"></canvas></div>
+  </div>
+
+  {# =========================== FUNNEL =========================== #}
+  <h2 id="funnel">Percorso delle escort</h2>
+  <p class="note">Dalla visita alla pagina di registrazione al primo pagamento, per chi ha iniziato nel periodo.{% if filtri.filtra_escort %} Con i filtri di zona o categoria, i primi due passi restano complessivi: prima di compilare la scheda un account non ha ancora città né categoria.{% endif %}</p>
+  <div class="card">
+    {% with base=s.funnel.0.count %}
+    {% for step in s.funnel %}
+      <div class="funnel-row">
+        <div>{{ step.label }}</div>
+        <div><div class="funnel-bar" style="width:{% if base %}{{ step.count|barra:base }}{% else %}0{% endif %}%"></div></div>
+        <div class="n" style="text-align:right"><b>{{ step.count|num }}</b>{% if step.pct_prec is not None %} <span class="tag">{{ step.pct_prec|pct }} del passo prima</span>{% endif %}</div>
+      </div>
+    {% endfor %}
+    {% endwith %}
+  </div>
+
+  {# =========================== CLASSIFICA =========================== #}
+  <h2 id="classifica">Classifica escort</h2>
+  <p class="note">Una riga per scheda con le sue metriche nel periodo. Mostro le prime {{ classifica|length }} di {{ classifica_totale }}: l'export CSV le contiene tutte.</p>
+  <div class="card">
+    <form method="get" style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:.6rem">
+      {% for k, v in filtri.as_querydict.items %}{% if k != 'ordina' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+      <label style="font-size:.85rem">Ordina per
+        <select name="ordina" onchange="this.form.submit()" style="padding:.35rem .5rem;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)">
+          {% for val, lbl in opzioni.ordinamenti %}<option value="{{ val }}" {% if filtri.ordina == val %}selected{% endif %}>{{ lbl }}</option>{% endfor %}
+        </select>
+      </label>
+      <a class="btn" href="{{ export_url }}">⬇ Esporta CSV</a>
+    </form>
+    <div class="scroll"><table>
+      <thead><tr>
+        <th>#</th><th>Escort</th><th>Zona</th><th>Stato</th><th>Abbonamento</th>
+        <th class="n">Visite</th><th class="n">Unici</th><th class="n">Preferiti</th><th class="n">Recensioni</th><th class="n">★</th><th class="n">Click tel.</th><th class="n">Incasso</th>
+      </tr></thead>
       <tbody>
-        {% for row in stats.visite.top_pages %}
-          <tr><td>{{ row.path }}</td><td class="num">{{ row.c }}</td></tr>
-        {% endfor %}
+        {% for r in classifica %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><a href="{% url 'admin:professioniste_professionista_change' r.id %}"><b>{{ r.nome }}</b></a><br><span class="note">{{ r.categoria }}</span></td>
+          <td>{{ r.citta }}{% if r.provincia %} ({{ r.provincia }}){% endif %}</td>
+          <td><span class="tag">{{ r.stato }}{% if r.in_pausa %} · pausa{% endif %}</span></td>
+          <td>{% if r.abbonamento %}{{ r.abbonamento }}{% else %}<span class="note">nessuno</span>{% endif %}</td>
+          <td class="n">{{ r.visite|num }}</td>
+          <td class="n">{{ r.unici|num }}</td>
+          <td class="n">{{ r.preferiti|num }} <span class="note">/ {{ r.preferiti_totali|num }}</span></td>
+          <td class="n">{{ r.recensioni|num }} <span class="note">/ {{ r.recensioni_totali|num }}</span></td>
+          <td class="n">{{ r.media_stelle|num:1 }}</td>
+          <td class="n">{{ r.click|num }}</td>
+          <td class="n">{{ r.incasso|euro }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="12" class="vuoto">Nessuna scheda con questi filtri.</td></tr>{% endfor %}
       </tbody>
-    </table>
-  </div>
-  {% endif %}
-
-  {# ============================= UTENTI ============================= #}
-  <h2 class="dash-section-title">Utenti registrati</h2>
-  <div class="dash-grid">
-    <div class="dash-card">
-      <div class="dash-card-label">Totale</div>
-      <div class="dash-card-value">{{ stats.utenti.totali }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Escort</div>
-      <div class="dash-card-value">{{ stats.utenti.escort }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Clienti</div>
-      <div class="dash-card-value">{{ stats.utenti.clienti }}</div>
-    </div>
-    <div class="dash-card dash-card-accent">
-      <div class="dash-card-label">Nuovi ultimi 30gg</div>
-      <div class="dash-card-value">{{ stats.utenti.nuovi_30 }}</div>
-      <div class="dash-card-extra">{{ stats.utenti.nuovi_7 }} nei 7 giorni</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Nuove escort (30gg)</div>
-      <div class="dash-card-value">{{ stats.utenti.escort_nuove_30 }}</div>
-    </div>
-  </div>
-
-  {# ============================= SCHEDE ============================= #}
-  <h2 class="dash-section-title">Schede escort</h2>
-  <div class="dash-grid">
-    <div class="dash-card">
-      <div class="dash-card-label">Totali</div>
-      <div class="dash-card-value">{{ stats.schede.totali }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Approvate</div>
-      <div class="dash-card-value">{{ stats.schede.approvate }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">In attesa</div>
-      <div class="dash-card-value">{{ stats.schede.in_attesa }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Rifiutate</div>
-      <div class="dash-card-value">{{ stats.schede.rifiutate }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">In pausa</div>
-      <div class="dash-card-value">{{ stats.schede.in_pausa }}</div>
-    </div>
-    <div class="dash-card dash-card-accent">
-      <div class="dash-card-label">Click telefono (totali)</div>
-      <div class="dash-card-value">{{ stats.schede.click_telefono_tot }}</div>
-      <div class="dash-card-extra">somma su tutte le schede</div>
-    </div>
-  </div>
-
-  {# ============================= ABBONAMENTI ============================= #}
-  <h2 class="dash-section-title">Abbonamenti & fatturato</h2>
-  <div class="dash-grid">
-    <div class="dash-card">
-      <div class="dash-card-label">Standard attivi</div>
-      <div class="dash-card-value">{{ stats.abbonamenti.attivi_standard }}</div>
-    </div>
-    <div class="dash-card dash-card-accent">
-      <div class="dash-card-label">Evidenza attivi</div>
-      <div class="dash-card-value">{{ stats.abbonamenti.attivi_evidenza }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Fatturato 30gg</div>
-      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_30_eur|floatformat:2 }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Fatturato 90gg</div>
-      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_90_eur|floatformat:2 }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Fatturato totale</div>
-      <div class="dash-card-value">€ {{ stats.abbonamenti.fatturato_tot_eur|floatformat:2 }}</div>
-      <div class="dash-card-extra">da inizio attività</div>
-    </div>
-  </div>
-
-  {# ============================= SBLOCCHI ============================= #}
-  <h2 class="dash-section-title">Sblocchi social (one-shot)</h2>
-  <div class="dash-grid">
-    <div class="dash-card">
-      <div class="dash-card-label">Sblocchi totali</div>
-      <div class="dash-card-value">{{ stats.sblocchi.totali }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Ricavato sblocchi</div>
-      <div class="dash-card-value">€ {{ stats.sblocchi.fatturato_eur|floatformat:2 }}</div>
-    </div>
-  </div>
-
-  {# ============================= RECENSIONI ============================= #}
-  <h2 class="dash-section-title">Recensioni</h2>
-  <div class="dash-grid">
-    <div class="dash-card">
-      <div class="dash-card-label">Recensioni escort</div>
-      <div class="dash-card-value">{{ stats.recensioni.escort }}</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-label">Recensioni del sito</div>
-      <div class="dash-card-value">{{ stats.recensioni.sito }}</div>
-    </div>
-    <div class="dash-card dash-card-accent">
-      <div class="dash-card-label">Media stelle sito</div>
-      <div class="dash-card-value">{% if stats.recensioni.sito_media %}{{ stats.recensioni.sito_media }}{% else %}—{% endif %}</div>
-    </div>
+    </table></div>
+    <p class="note">Preferiti e recensioni: "nel periodo / totali". Click sul telefono: totale da sempre.</p>
   </div>
 </div>
+{% endwith %}
 
+{{ grafici|json_script:"dati-grafici" }}
+{{ distribuzioni|json_script:"dati-distribuzioni" }}
 <script>
-  (function() {
-    var ctx = document.getElementById('chart-visite');
-    if (!ctx) return;
-    var labels = {{ serie_30_labels_json|safe }};
-    var values = {{ serie_30_values_json|safe }};
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Visite',
-          data: values,
-          borderColor: '#E91E8C',
-          backgroundColor: 'rgba(233, 30, 140, 0.12)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 2,
-          pointBackgroundColor: '#E91E8C',
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, ticks: { precision: 0 } },
-          x: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
-        }
-      }
-    });
-  })();
+(function () {
+  var periodo = document.getElementById('f-periodo');
+  var date = document.getElementById('f-date');
+  periodo.addEventListener('change', function () {
+    if (periodo.value === 'custom') { date.classList.add('on'); }
+    else { date.classList.remove('on'); periodo.form.submit(); }
+  });
+
+  if (!window.Chart) return;
+  var G = JSON.parse(document.getElementById('dati-grafici').textContent);
+  var D = JSON.parse(document.getElementById('dati-distribuzioni').textContent);
+  var dark = document.documentElement.classList.contains('dark');
+  var testo = dark ? '#a1a1aa' : '#71717a', griglia = dark ? '#3f3f46' : '#f0f0f0';
+  var ACC = '#E91E8C', VIOLA = '#7c3aed', ACC_T = 'rgba(233,30,140,0.12)';
+  Chart.defaults.color = testo;
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  var assi = { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+               y: { beginAtZero: true, grid: { color: griglia }, ticks: { precision: 0 } } };
+
+  function linea(id, serie, opz) {
+    var el = document.getElementById(id); if (!el) return;
+    new Chart(el, { type: 'line', data: { labels: G.etichette, datasets: serie.map(function (s) {
+      return { label: s.label, data: s.data, borderColor: s.colore, backgroundColor: s.fill ? ACC_T : s.colore,
+               fill: !!s.fill, tension: 0.3, pointRadius: G.etichette.length > 40 ? 0 : 2, borderWidth: 2 };
+    }) }, options: Object.assign({ interaction: { mode: 'index', intersect: false }, scales: assi,
+      plugins: { legend: { display: serie.length > 1 } } }, opz || {}) });
+  }
+  function barre(id, labels, data, colore, opz) {
+    var el = document.getElementById(id); if (!el) return;
+    new Chart(el, { type: 'bar', data: { labels: labels, datasets: [{ data: data, backgroundColor: colore || ACC, borderRadius: 4 }] },
+      options: Object.assign({ scales: assi, plugins: { legend: { display: false } } }, opz || {}) });
+  }
+
+  linea('g-visite', [
+    { label: 'Visite', data: G.visite, colore: ACC, fill: true },
+    { label: 'Visitatori unici', data: G.unici, colore: VIOLA },
+  ]);
+  barre('g-ore', Array.from({ length: 24 }, function (_, h) { return h + ':00'; }), G.per_ora);
+  barre('g-settimana', ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'], G.per_giorno_settimana, VIOLA);
+  linea('g-registrazioni', [
+    { label: 'Clienti', data: G.reg_clienti, colore: VIOLA },
+    { label: 'Escort', data: G.reg_escort, colore: ACC },
+  ]);
+  barre('g-schede', G.etichette, G.nuove_schede);
+  barre('g-incassi', G.etichette, G.incassi, ACC, { plugins: { legend: { display: false }, tooltip: { callbacks: {
+    label: function (c) { return '€ ' + c.parsed.y.toLocaleString('it-IT', { maximumFractionDigits: 2 }); } } } } });
+  linea('g-engagement', [
+    { label: 'Recensioni', data: G.recensioni, colore: ACC },
+    { label: 'Preferiti', data: G.preferiti, colore: VIOLA },
+  ]);
+  barre('g-stelle', ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'], D.stelle, ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#22c55e']);
+
+  var el = document.getElementById('g-dispositivi');
+  if (el && D.dispositivi.length) {
+    new Chart(el, { type: 'doughnut', data: { labels: D.dispositivi.map(function (r) { return r.label; }),
+      datasets: [{ data: D.dispositivi.map(function (r) { return r.count; }),
+                   backgroundColor: [ACC, VIOLA, '#f59e0b', '#a1a1aa'], borderWidth: 0 }] },
+      options: { cutout: '60%', maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } });
+  } else if (el) { el.outerHTML = '<p class="vuoto">Nessun dato.</p>'; }
+})();
 </script>
 {% endblock %}
