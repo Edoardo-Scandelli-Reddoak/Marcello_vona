@@ -41,3 +41,124 @@
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
+
+/* ───────── Documenti legali (/privacy, /cookie, /termini) ─────────
+   L'HTML arriva da Iubenda (scripts/importa_documenti_legali.py) con le sue
+   classi: qui lo vestiamo con i colori e i caratteri del sito. */
+.doc-legale {
+  --rosa: #E91E8C;
+  --testo: #1A1A1A;
+  color: rgb(26 26 26 / 0.75);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.doc-legale .sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.doc-legale > section,
+.doc-legale > .main__section { scroll-margin-top: 6rem; }
+.doc-legale > section + section,
+.doc-legale > section + .pre-footer { margin-top: 2.5rem; padding-top: 2.5rem; border-top: 1px solid rgb(26 26 26 / 0.08); }
+.doc-legale [id] { scroll-margin-top: 6rem; }
+
+.doc-legale h2 {
+  color: var(--testo); font-size: 1.5rem; line-height: 1.25; font-weight: 700;
+  letter-spacing: -0.015em; margin: 0 0 1rem;
+}
+.doc-legale h2::before {
+  content: ''; display: block; width: 2rem; height: 3px; border-radius: 3px;
+  background: var(--rosa); margin-bottom: 0.875rem;
+}
+.doc-legale h3 { color: var(--testo); font-size: 1.125rem; font-weight: 700; margin: 2rem 0 0.5rem; line-height: 1.35; }
+.doc-legale h4 { color: var(--testo); font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.375rem; }
+.doc-legale h5, .doc-legale h6 { color: var(--testo); font-size: 0.875rem; font-weight: 600; margin: 1rem 0 0.25rem; }
+.doc-legale p { margin: 0.75rem 0; }
+.doc-legale strong, .doc-legale b { color: var(--testo); font-weight: 600; }
+.doc-legale a { color: var(--rosa); text-decoration: underline; text-decoration-color: rgb(233 30 140 / 0.35); text-underline-offset: 3px; }
+.doc-legale a:hover { text-decoration-color: var(--rosa); }
+.doc-legale hr { border: 0; border-top: 1px solid rgb(26 26 26 / 0.08); margin: 2rem 0; }
+
+.doc-legale ul, .doc-legale ol { margin: 0.75rem 0; padding-left: 1.25rem; }
+.doc-legale ul { list-style: disc; }
+.doc-legale ol { list-style: decimal; }
+.doc-legale li { margin: 0.3rem 0; }
+.doc-legale li::marker { color: var(--rosa); }
+
+/* Liste con spunta / freccia */
+.doc-legale .check-style-list,
+.doc-legale .arrow-style-list,
+.doc-legale .unstyled-list { list-style: none; padding-left: 0; }
+.doc-legale .check-style-list li,
+.doc-legale .arrow-style-list li { position: relative; padding-left: 1.75rem; }
+.doc-legale .check-style-list li::before {
+  content: ''; position: absolute; left: 0; top: 0.35em; width: 1.1rem; height: 1.1rem; border-radius: 999px;
+  background: rgb(233 30 140 / 0.1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E91E8C' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 0.65rem no-repeat;
+}
+.doc-legale .arrow-style-list li::before {
+  content: '→'; position: absolute; left: 0.2rem; top: 0; color: var(--rosa); font-weight: 700;
+}
+.doc-legale .unstyled-list li { margin: 0.25rem 0; }
+
+/* Pillole (tipi di dati) */
+.doc-legale .pills-list { display: flex; flex-wrap: wrap; gap: 0.375rem; list-style: none; padding: 0; }
+.doc-legale .pill {
+  margin: 0; border-radius: 999px; background: #F8F7F5; border: 1px solid rgb(26 26 26 / 0.08);
+  padding: 0.125rem 0.75rem; font-size: 0.8125rem; color: var(--testo);
+}
+
+/* Schede riepilogo ("Dati che raccogliamo", "Come possiamo aiutare?") */
+.doc-legale .summary__cards-wrapper { display: grid; gap: 1rem; margin-top: 1.25rem; }
+@media (min-width: 768px) { .doc-legale .summary__cards-wrapper { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.doc-legale .summary__card {
+  border: 1px solid rgb(26 26 26 / 0.08); border-radius: 1.25rem; background: #FBFAF9; padding: 1.25rem 1.25rem 0.5rem;
+}
+.doc-legale .summary__card h3 { margin-top: 0; }
+.doc-legale .summary__card header p { margin-top: 0.25rem; font-size: 0.875rem; }
+.doc-legale .summary__card-section { margin-bottom: 1rem; }
+.doc-legale .summary__card h4 {
+  margin: 1rem 0 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(26 26 26 / 0.45);
+}
+.doc-legale .third-parties-item { font-size: 0.875rem; color: var(--testo); }
+.doc-legale .preferenze-cookie { visibility: visible !important; }
+
+.doc-legale .btn {
+  display: inline-flex; align-items: center; border-radius: 999px; background: var(--rosa); color: #fff;
+  padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 600; text-decoration: none;
+}
+.doc-legale .btn:hover { background: #D11A7D; }
+
+/* Fornitori terzi: righe espandibili */
+.doc-legale .legalDoc__accordion {
+  margin: 0.75rem 0; border: 1px solid rgb(26 26 26 / 0.08); border-radius: 1rem; background: #fff;
+  transition: border-color 0.2s ease-out;
+}
+.doc-legale .legalDoc__accordion[open] { border-color: rgb(233 30 140 / 0.35); }
+.doc-legale .legalDoc__accordion > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  cursor: pointer; list-style: none; padding: 0.875rem 1.125rem;
+}
+.doc-legale .legalDoc__accordion > summary::-webkit-details-marker { display: none; }
+.doc-legale .legalDoc__accordion > summary::after {
+  content: '+'; flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 999px; display: grid; place-items: center;
+  background: rgb(233 30 140 / 0.1); color: var(--rosa); font-weight: 700; transition: transform 0.2s ease-out;
+}
+.doc-legale .legalDoc__accordion[open] > summary::after { transform: rotate(45deg); }
+.doc-legale .legalDoc__accordion summary h4 { margin: 0; }
+.doc-legale .accordion__meta { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.8125rem; color: rgb(26 26 26 / 0.5); }
+.doc-legale .accordion__meta p { margin: 0; }
+.doc-legale .accordion__body { padding: 0 1.125rem 1rem; border-top: 1px solid rgb(26 26 26 / 0.06); }
+.doc-legale .body__details-box {
+  margin-top: 0.75rem; border-radius: 0.75rem; background: #F8F7F5; padding: 0.25rem 1rem 0.75rem; font-size: 0.875rem;
+}
+.doc-legale .body__details-box h5 { margin-top: 0.75rem; }
+.doc-legale .body__details-box ul { margin: 0.25rem 0; }
+
+/* Tabelle (se il documento ne ha) */
+.doc-legale table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin: 1rem 0; }
+.doc-legale th, .doc-legale td { border-bottom: 1px solid rgb(26 26 26 / 0.08); padding: 0.5rem; text-align: left; vertical-align: top; }
+
+@media (min-width: 640px) {
+  .doc-legale h2 { font-size: 1.75rem; }
+}

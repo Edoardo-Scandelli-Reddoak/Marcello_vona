@@ -53,7 +53,9 @@ export const COMPANY: CompanyInfo = {
   pec: '',
   telefono: '+39 352 062 7731',
   iban: 'IT20E0832739240000000002981',
-  intestatarioConto: 'Marcello Vona',
+  // Nascosto temporaneamente (2026-11-20, bozza da mostrare al cliente):
+  // da rimettere insieme ai dati del titolare nei documenti legali.
+  intestatarioConto: '',
 };
 
 /** True quando c'e' un IBAN da mostrare. L'intestatario e' facoltativo: se

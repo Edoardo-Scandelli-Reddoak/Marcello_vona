@@ -1,23 +1,16 @@
 import type { Metadata } from 'next';
+import DocumentoLegale from '@/components/DocumentoLegale';
+import documento from '@/content/legal/privacy';
 
+// Testo importato da Iubenda con scripts/importa_documenti_legali.py e reso
+// con la grafica del sito. Per aggiornarlo: modifica il documento su Iubenda e
+// rilancia lo script (poi commit + deploy).
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Escort Bella',
+  title: 'Privacy Policy',
   description: 'Come trattiamo i tuoi dati personali sul sito Escort Bella.',
+  alternates: { canonical: '/privacy' },
 };
 
-// Privacy Policy ospitata da Iubenda (siteId 14462765). Embed via iframe sul
-// nostro dominio così l'utente non lascia escort-bella.it. Il testo è gestito
-// dal dashboard Iubenda — quando aggiorni le clausole lì, la pagina riflette
-// subito le modifiche (nessun deploy necessario).
-export default function PrivacyPage() {
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
-      <iframe
-        src="https://www.iubenda.com/privacy-policy/14462765"
-        title="Privacy Policy"
-        className="block w-full rounded-2xl border border-[#1A1A1A]/10 bg-white"
-        style={{ height: 'calc(100vh - 8rem)', minHeight: '600px' }}
-      />
-    </div>
-  );
+export default function Page() {
+  return <DocumentoLegale documento={documento} percorso="/privacy" nome="Privacy Policy" />;
 }

@@ -145,7 +145,7 @@ export default function RootLayout({
             pulsanti, lingue, blocchi cookie, ecc. → dashboard Iubenda. */}
         <Script id="iubenda-cs-config" strategy="beforeInteractive">
           {`var _iub = _iub || [];
-_iub.csConfiguration = {"siteId":14462765,"cookiePolicyId":14462765,"lang":"it","storage":{"useSiteId":true}};`}
+_iub.csConfiguration = {"siteId":14462765,"cookiePolicyId":14462765,"lang":"it","storage":{"useSiteId":true},"privacyPolicyUrl":"https://escort-bella.it/privacy","cookiePolicyUrl":"https://escort-bella.it/cookie"};`}
         </Script>
         <Script
           src="https://cdn.iubenda.com/cs/iubenda_cs.js"
